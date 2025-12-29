@@ -1,0 +1,38 @@
+<resources>
+  <!-- 
+      Splash Screen Theme
+      Shows immediately when app launches, before React Native loads
+      Uses custom layout with logo and app name
+    -->
+
+  <!-- 
+      Main App Theme
+      Applied after splash screen is hidden
+      Used throughout the app
+    -->
+  <style name="SplashTheme" parent="Theme.AppCompat.Light.NoActionBar">
+    <item name="android:windowBackground">@drawable/launch_screen</item>
+
+    <!-- Required to prevent launcher icon preview -->
+    <item name="android:windowDisablePreview">true</item>
+    <item name="android:windowIsTranslucent">false</item>
+
+    <!-- Prevent screenshot/preview caching -->
+    <item name="android:windowShowWallpaper">false</item>
+
+    <item name="android:statusBarColor">@color/splash_background</item>
+    <item name="android:navigationBarColor">@color/splash_background</item>
+
+    <item name="android:windowNoTitle">true</item>
+    <item name="android:windowActionBar">false</item>
+  </style>
+
+
+  <!-- 
+      Smooth fade transition from splash to main app
+    -->
+  <style name="WindowAnimationTransition" parent="@android:style/Animation">
+    <item name="android:windowEnterAnimation">@android:anim/fade_in</item>
+    <item name="android:windowExitAnimation">@android:anim/fade_out</item>
+  </style>
+</resources>

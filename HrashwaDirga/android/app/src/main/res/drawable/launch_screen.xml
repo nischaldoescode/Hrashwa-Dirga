@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    
+    <!-- Background color -->
+    <item android:drawable="@color/splash_background" />
+    
+    <!-- Logo with rounded background - CENTERED -->
+    <item 
+        android:width="200dp"
+        android:height="200dp"
+        android:gravity="center">
+        <layer-list>
+            <!-- Rounded background -->
+            <item>
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/primary" />
+                    <corners android:radius="24dp" />
+                </shape>
+            </item>
+            <!-- Logo image on top with padding -->
+            <item 
+                android:drawable="@drawable/splash_logo"
+                android:top="24dp"
+                android:bottom="24dp"
+                android:left="24dp"
+                android:right="24dp" />
+        </layer-list>
+    </item>
+
+</layer-list>
