@@ -137,7 +137,6 @@ export const DailyCoinClaimModal: React.FC<DailyCoinClaimModalProps> = ({
       ),
     );
 
-    // Step 4: Fade out near the end
     coinOpacity.value = withDelay(1200, withTiming(0, { duration: 200 }));
   };
 

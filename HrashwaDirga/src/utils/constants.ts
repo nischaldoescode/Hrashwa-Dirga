@@ -13,7 +13,7 @@ const getApiBaseUrl = (): string => {
     if (Platform.OS === 'android') {
       // For Android physical device, use our computer's local IP
       // For emulator, you can also use this IP (works for both)
-      return 'http://192.168.0.3:5000/api';
+      return 'http://192.168.1.21:5000/api';
     } else if (Platform.OS === 'ios') {
       // iOS simulator can use localhost
       return 'http://localhost:5000/api';
