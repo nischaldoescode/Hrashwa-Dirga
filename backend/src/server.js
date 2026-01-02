@@ -18,6 +18,7 @@ const questionRoutes = require('./routes/questions');
 const levelRoutes = require('./routes/levels');
 const leaderboardRoutes = require('./routes/leaderboard');
 const configRoutes = require('./routes/config');
+const adRoutes = require('./routes/ads');
 
 const app = express();
 
@@ -77,6 +78,7 @@ app.use('/api/questions', questionRoutes);
 app.use('/api/levels', levelRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
 app.use('/api/config', configRoutes);
+app.use('/api/ads', adRoutes);
 
 app.use('*', (req, res) => {
   res.status(404).json({

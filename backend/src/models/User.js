@@ -80,6 +80,19 @@ const userSchema = new mongoose.Schema(
         default: true,
       },
     },
+    dailyHintUsage: {
+      lastHintDate: { type: Date, default: null },
+      hintsUsedToday: { type: Number, default: 0 },
+      maxHintsPerDay: { type: Number, default: 1 },
+    },
+    dailyAdRewards: {
+      lastAdDate: { type: Date, default: null },
+      adsWatchedToday: { type: Number, default: 0 },
+      rewardsClaimedToday: { type: Number, default: 0 },
+      maxRewardsPerDay: { type: Number, default: 2 },
+      coinsPerAd: { type: Number, default: 3 },
+    },
+
     // Current level number the user is playing (1-based indexing)
     currentLevel: {
       type: Number,
@@ -155,6 +168,176 @@ userSchema.index({ totalScore: -1, createdAt: 1 });
 userSchema.index({ isActive: 1 });
 
 /**
+ * Check if user can get reward for watching ad
+ * @returns {Object} Status object with canClaim and remaining info
+ */
+userSchema.methods.canClaimAdReward = function () {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const lastAdDate = this.dailyAdRewards.lastAdDate
+    ? new Date(this.dailyAdRewards.lastAdDate)
+    : null;
+
+  if (!lastAdDate) {
+    // First ad ever
+    return {
+      canClaim: true,
+      remaining: this.dailyAdRewards.maxRewardsPerDay,
+      coinsToEarn: this.dailyAdRewards.coinsPerAd,
+    };
+  }
+
+  lastAdDate.setHours(0, 0, 0, 0);
+
+  // Different day - reset counter
+  if (today.getTime() !== lastAdDate.getTime()) {
+    return {
+      canClaim: true,
+      remaining: this.dailyAdRewards.maxRewardsPerDay,
+      coinsToEarn: this.dailyAdRewards.coinsPerAd,
+    };
+  }
+
+  // Same day - check if rewards remaining
+  const remaining =
+    this.dailyAdRewards.maxRewardsPerDay -
+    this.dailyAdRewards.rewardsClaimedToday;
+
+  return {
+    canClaim: remaining > 0,
+    remaining: remaining,
+    coinsToEarn: remaining > 0 ? this.dailyAdRewards.coinsPerAd : 0,
+  };
+};
+
+/**
+ * Record ad watch and give reward if eligible
+ * @returns {Promise<Object>} Reward result
+ */
+userSchema.methods.watchAdAndClaim = async function () {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const lastAdDate = this.dailyAdRewards.lastAdDate
+    ? new Date(this.dailyAdRewards.lastAdDate)
+    : null;
+
+  let rewardGiven = false;
+  let coinsEarned = 0;
+
+  if (!lastAdDate) {
+    // First ad ever
+    this.dailyAdRewards.lastAdDate = today;
+    this.dailyAdRewards.adsWatchedToday = 1;
+    this.dailyAdRewards.rewardsClaimedToday = 1;
+    this.coins += this.dailyAdRewards.coinsPerAd;
+    rewardGiven = true;
+    coinsEarned = this.dailyAdRewards.coinsPerAd;
+  } else {
+    lastAdDate.setHours(0, 0, 0, 0);
+
+    if (today.getTime() !== lastAdDate.getTime()) {
+      // New day - reset counters
+      this.dailyAdRewards.lastAdDate = today;
+      this.dailyAdRewards.adsWatchedToday = 1;
+      this.dailyAdRewards.rewardsClaimedToday = 1;
+      this.coins += this.dailyAdRewards.coinsPerAd;
+      rewardGiven = true;
+      coinsEarned = this.dailyAdRewards.coinsPerAd;
+    } else {
+      // Same day - increment watch count
+      this.dailyAdRewards.adsWatchedToday += 1;
+
+      // Give reward only if under limit
+      if (
+        this.dailyAdRewards.rewardsClaimedToday <
+        this.dailyAdRewards.maxRewardsPerDay
+      ) {
+        this.dailyAdRewards.rewardsClaimedToday += 1;
+        this.coins += this.dailyAdRewards.coinsPerAd;
+        rewardGiven = true;
+        coinsEarned = this.dailyAdRewards.coinsPerAd;
+      }
+    }
+  }
+
+  await this.save();
+
+  return {
+    rewardGiven,
+    coinsEarned,
+    newBalance: this.coins,
+    adsWatchedToday: this.dailyAdRewards.adsWatchedToday,
+    rewardsRemaining:
+      this.dailyAdRewards.maxRewardsPerDay -
+      this.dailyAdRewards.rewardsClaimedToday,
+  };
+};
+
+/**
+ * Check if user can use hint today
+ * @returns {boolean} True if user has hints remaining
+ */
+userSchema.methods.canUseHintToday = function () {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const lastHintDate = this.dailyHintUsage.lastHintDate
+    ? new Date(this.dailyHintUsage.lastHintDate)
+    : null;
+
+  if (!lastHintDate) {
+    // Never used hint before
+    return true;
+  }
+
+  lastHintDate.setHours(0, 0, 0, 0);
+
+  // If last hint was on a different day, reset counter
+  if (today.getTime() !== lastHintDate.getTime()) {
+    return true;
+  }
+
+  // Check if user has hints remaining today
+  return (
+    this.dailyHintUsage.hintsUsedToday < this.dailyHintUsage.maxHintsPerDay
+  );
+};
+
+/**
+ * Record hint usage for today
+ * @returns {Promise<void>}
+ */
+userSchema.methods.recordHintUsage = async function () {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const lastHintDate = this.dailyHintUsage.lastHintDate
+    ? new Date(this.dailyHintUsage.lastHintDate)
+    : null;
+
+  if (!lastHintDate) {
+    // First hint ever
+    this.dailyHintUsage.lastHintDate = today;
+    this.dailyHintUsage.hintsUsedToday = 1;
+  } else {
+    lastHintDate.setHours(0, 0, 0, 0);
+
+    if (today.getTime() !== lastHintDate.getTime()) {
+      // New day - reset counter
+      this.dailyHintUsage.lastHintDate = today;
+      this.dailyHintUsage.hintsUsedToday = 1;
+    } else {
+      // Same day - increment counter
+      this.dailyHintUsage.hintsUsedToday += 1;
+    }
+  }
+
+  await this.save();
+};
+
+/**
  * Check if daily coins can be claimed
  * Compares last claim date with current date
  * @returns {Object} Claim eligibility status and streak info
@@ -162,7 +345,7 @@ userSchema.index({ isActive: 1 });
 userSchema.methods.checkDailyClaimStatus = function () {
   const now = new Date();
   now.setHours(0, 0, 0, 0); // Normalize to start of day
-  
+
   // New user - first time claiming
   if (!this.dailyCoinClaim.lastClaimDate) {
     return {
@@ -173,12 +356,14 @@ userSchema.methods.checkDailyClaimStatus = function () {
       coinsToAward: 10, // First day bonus
     };
   }
-  
+
   const lastClaim = new Date(this.dailyCoinClaim.lastClaimDate);
   lastClaim.setHours(0, 0, 0, 0);
-  
-  const daysSinceLastClaim = Math.floor((now - lastClaim) / (1000 * 60 * 60 * 24));
-  
+
+  const daysSinceLastClaim = Math.floor(
+    (now - lastClaim) / (1000 * 60 * 60 * 24)
+  );
+
   // Already claimed today
   if (daysSinceLastClaim === 0) {
     return {
@@ -187,10 +372,10 @@ userSchema.methods.checkDailyClaimStatus = function () {
       currentStreak: this.dailyCoinClaim.currentStreak,
       daysUntilNextClaim: 1,
       coinsToAward: 0,
-      message: 'Already claimed today. Come back tomorrow!',
+      message: "Already claimed today. Come back tomorrow!",
     };
   }
-  
+
   // Can claim - exactly 1 day passed (streak continues)
   if (daysSinceLastClaim === 1) {
     return {
@@ -202,7 +387,7 @@ userSchema.methods.checkDailyClaimStatus = function () {
       coinsToAward: 10,
     };
   }
-  
+
   // Missed days - streak breaks, reset to day 1
   if (daysSinceLastClaim > 1) {
     return {
@@ -216,7 +401,7 @@ userSchema.methods.checkDailyClaimStatus = function () {
       message: `You missed ${daysSinceLastClaim - 1} day(s). Streak reset!`,
     };
   }
-  
+
   return {
     canClaim: false,
     isFirstClaim: false,
@@ -233,17 +418,17 @@ userSchema.methods.checkDailyClaimStatus = function () {
  */
 userSchema.methods.claimDailyCoins = async function () {
   const claimStatus = this.checkDailyClaimStatus();
-  
+
   if (!claimStatus.canClaim) {
-    throw new Error(claimStatus.message || 'Cannot claim coins at this time');
+    throw new Error(claimStatus.message || "Cannot claim coins at this time");
   }
-  
+
   const now = new Date();
   const coinsAwarded = claimStatus.coinsToAward;
-  
+
   // Update user coins
   this.coins += coinsAwarded;
-  
+
   // Update claim tracking
   if (claimStatus.isFirstClaim) {
     // First time claim
@@ -264,12 +449,12 @@ userSchema.methods.claimDailyCoins = async function () {
     this.dailyCoinClaim.totalClaims += 1;
     this.dailyCoinClaim.canClaim = false;
   }
-  
+
   // Also update old lastCoinAwardDate for backward compatibility
   this.lastCoinAwardDate = now;
-  
+
   await this.save();
-  
+
   return {
     success: true,
     coinsAwarded,
@@ -277,10 +462,10 @@ userSchema.methods.claimDailyCoins = async function () {
     currentStreak: this.dailyCoinClaim.currentStreak,
     totalClaims: this.dailyCoinClaim.totalClaims,
     nextClaimAvailable: new Date(now.getTime() + 24 * 60 * 60 * 1000), // Tomorrow
-    message: claimStatus.isFirstClaim 
-      ? 'Welcome! Day 1 bonus claimed!' 
+    message: claimStatus.isFirstClaim
+      ? "Welcome! Day 1 bonus claimed!"
       : claimStatus.streakBroken
-      ? 'Streak reset. Keep playing daily!'
+      ? "Streak reset. Keep playing daily!"
       : `Day ${this.dailyCoinClaim.currentStreak} claimed! Keep the streak going!`,
   };
 };

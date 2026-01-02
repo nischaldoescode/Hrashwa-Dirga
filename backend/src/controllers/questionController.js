@@ -435,6 +435,17 @@ const useHint = async (req, res) => {
       });
     }
 
+    // CHECK DAILY HINT LIMIT FIRST
+    if (!user.canUseHintToday()) {
+      return res.status(400).json({
+        success: false,
+        message: "Daily hint limit reached. Come back tomorrow!",
+        dailyLimitReached: true,
+        hintsUsedToday: user.dailyHintUsage.hintsUsedToday,
+        maxHintsPerDay: user.dailyHintUsage.maxHintsPerDay,
+      });
+    }
+
     const question = await Question.findById(questionId);
     if (!question) {
       return res.status(404).json({
@@ -488,6 +499,9 @@ const useHint = async (req, res) => {
     try {
       const optionToRemove = question.removeOneIncorrectOption();
 
+      // RECORD HINT USAGE
+      await user.recordHintUsage();
+
       // Invalidate caches
       await Promise.all([
         invalidateUserCache(user._id.toString()),
@@ -499,6 +513,9 @@ const useHint = async (req, res) => {
         data: {
           optionToRemove: optionToRemove,
           coinsRemaining: user.coins,
+          hintsRemainingToday:
+            user.dailyHintUsage.maxHintsPerDay -
+            user.dailyHintUsage.hintsUsedToday,
         },
         message: "Hint used successfully",
       });
@@ -515,6 +532,7 @@ const useHint = async (req, res) => {
     });
   }
 };
+
 
 const getNextQuestion = async (req, res) => {
   try {
