@@ -46,6 +46,7 @@ import { STORAGE_KEYS } from '@/utils/constants';
 import { GradientBackground } from '@/components/common/GradientBackground';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import { getProfile } from '@/api/authApi';
+import { adMobService } from '@/services/adMobService';
 
 type GameScreenParamList = {
   Game: { levelId: string };
@@ -73,6 +74,7 @@ export const GameScreen: React.FC = () => {
     addRemovedOption,
     incrementHintsUsed,
     queueOfflineAnswer,
+    setCurrentLevel,
   } = useGameStore();
 
   const { user, updateUserCoins, updateUserScore } = useAuthStore();
@@ -318,6 +320,11 @@ export const GameScreen: React.FC = () => {
           });
         }
 
+        // Development logging for debugging response structure
+        console.log('[GameScreen] Full API Response:', result);
+        console.log('[GameScreen] Answer Data:', answerData);
+        console.log('[GameScreen] Score Earned:', answerData.scoreEarned);
+
         // Set answer result with extracted data
         setAnswerResult({
           success: result.success,
@@ -392,19 +399,24 @@ export const GameScreen: React.FC = () => {
       return;
     }
 
-    if ((currentQuestion.hintsUsed || 0) >= 2) {
-      toast.info('Maximum 2 hints per question', 'short');
-      return;
-    }
+    // REMOVE THE PER-QUESTION LIMIT CHECK
+    // if ((currentQuestion.hintsUsed || 0) >= 2) {
+    //   toast.info('Maximum 2 hints per question', 'short');
+    //   return;
+    // }
 
     try {
       const result = await apiUseHint(currentQuestion.id);
 
-      // FIXED: Access nested data property
-      const optionToRemove =
-        result.data?.optionToRemove || result.optionToRemove;
-      const coinsRemaining =
-        result.data?.coinsRemaining || result.coinsRemaining;
+      // CHECK FOR DAILY LIMIT ERROR
+      if (!result.success && (result as any).dailyLimitReached) {
+        toast.error('Daily hint limit reached. Come back tomorrow!', 'long');
+        return;
+      }
+
+      const optionToRemove = result.data.optionToRemove;
+      const coinsRemaining = result.data.coinsRemaining;
+      const hintsRemaining = result.data.hintsRemainingToday || 0;
 
       if (!optionToRemove) {
         console.error('No option to remove in response:', result);
@@ -412,16 +424,27 @@ export const GameScreen: React.FC = () => {
         return;
       }
 
-      // Immediately update state - no timeout needed
+      // Immediately update state
       addRemovedOption(currentQuestion.id, optionToRemove);
       incrementHintsUsed(currentQuestion.id);
       updateUserCoins(coinsRemaining);
 
       ReactNativeHapticFeedback.trigger('notificationSuccess');
-      toast.success(`Hint used! ${coinsRemaining} coins remaining`, 'short');
-    } catch (error) {
+      toast.success(
+        `Hint used! ${hintsRemaining} hint${
+          hintsRemaining === 1 ? '' : 's'
+        } remaining today`,
+        'short',
+      );
+    } catch (error: any) {
       console.error('Use hint error:', error);
-      toast.error('Could not process hint request', 'short');
+
+      // Handle daily limit error from catch block too
+      if (error.response?.data?.dailyLimitReached) {
+        toast.error('Daily hint limit reached. Come back tomorrow!', 'long');
+      } else {
+        toast.error('Could not process hint request', 'short');
+      }
     }
   };
 
@@ -433,12 +456,25 @@ export const GameScreen: React.FC = () => {
     if (currentQuestionIndex < currentQuestions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     } else {
+      // CLEAR GAME STATE BEFORE NAVIGATING
+      setCurrentQuestions([]);
+      setCurrentQuestionIndex(0);
+      setCurrentLevel(null);
+
+      // Navigate to result screen
       navigation.navigate('Result', { levelId });
     }
   };
 
-  const handleExit = () => {
+  const handleExit = async () => {
     setShowExitModal(false);
+
+    // Show interstitial ad when quitting mid-game
+    const shown = await adMobService.showInterstitialAd();
+    if (shown) {
+      console.log('[GameScreen] Interstitial ad shown on exit');
+    }
+
     navigation.goBack();
   };
 

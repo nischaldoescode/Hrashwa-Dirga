@@ -18,7 +18,7 @@ class AuthService {
   initialize(): void {
     GoogleSignin.configure({
       webClientId:
-        
+        '509425229960-cubf8omantrg5t3f5hj9rgdko9bbjvi7.apps.googleusercontent.com', // From Firebase Console
       offlineAccess: false,
     });
   }

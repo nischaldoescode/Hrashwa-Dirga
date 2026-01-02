@@ -24,6 +24,7 @@ interface HintButtonProps {
   hintCost: number;
   userCoins: number;
   isOffline?: boolean;
+  hintsRemainingToday?: number;
 }
 
 /**
@@ -35,9 +36,12 @@ export const HintButton: React.FC<HintButtonProps> = ({
   hintCost,
   userCoins,
   isOffline = false,
+  hintsRemainingToday = 1, // Default to 1 if not the hints is not there
 }) => {
   const scale = useSharedValue(1);
-  const canAfford = userCoins >= hintCost && !isOffline;
+  const canAfford =
+    userCoins >= hintCost && !isOffline && hintsRemainingToday > 1;
+  // will decide if the user can afford the hint or not
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -90,7 +94,11 @@ export const HintButton: React.FC<HintButtonProps> = ({
               (!canAfford || isOffline) && styles.costDisabled,
             ]}
           >
-            {isOffline ? 'Offline' : `${hintCost} coins`}
+            {isOffline
+              ? 'Offline'
+              : hintsRemainingToday === 0
+              ? 'No hints today'
+              : `${hintCost} coins (${hintsRemainingToday} left)`}
           </Text>
         </View>
       </View>

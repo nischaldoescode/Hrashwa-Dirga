@@ -12,6 +12,8 @@ import {
   ViewStyle,
   TextStyle,
   View,
+  ImageSourcePropType,
+  Image,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -23,6 +25,8 @@ import Animated, {
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '@/utils/constants';
 import { BUTTON_SPRING_CONFIG } from '@/utils/animations';
+import { FontAwesome } from '@react-native-vector-icons/fontawesome';
+import type { FontAwesomeIconName } from '@react-native-vector-icons/fontawesome';
 
 const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
@@ -36,6 +40,10 @@ interface ButtonProps {
   fullWidth?: boolean;
   style?: ViewStyle;
   textStyle?: TextStyle;
+  iconName?: FontAwesomeIconName;
+  iconColor?: string;
+  iconSize?: number;
+  iconImage?: ImageSourcePropType;
 }
 
 /**
@@ -52,6 +60,10 @@ export const Button: React.FC<ButtonProps> = ({
   fullWidth = false,
   style,
   textStyle,
+  iconName,
+  iconColor = '#DB4437',
+  iconSize = 25,
+  iconImage,
 }) => {
   const scale = useSharedValue(1);
   const opacity = useSharedValue(1);
@@ -113,18 +125,34 @@ export const Button: React.FC<ButtonProps> = ({
           size="small"
         />
       ) : (
-        <Text
-          style={[
-            styles.text,
-            styles[`${variant}Text`],
-            styles[`${size}Text`],
-            textStyle,
-          ]}
-          numberOfLines={1}
-          adjustsFontSizeToFit
-        >
-          {title}
-        </Text>
+        <View style={styles.contentRow}>
+          {iconImage ? (
+            <Image
+              source={iconImage}
+              style={styles.iconImage}
+              resizeMode="contain"
+            />
+          ) : iconName ? (
+            <FontAwesome
+              name={iconName}
+              size={iconSize}
+              color={iconColor}
+              style={styles.icon}
+            />
+          ) : null}
+
+          <Text
+            style={[
+              styles.text,
+              styles[`${variant}Text`],
+              styles[`${size}Text`],
+              textStyle,
+            ]}
+            numberOfLines={1}
+          >
+            {title}
+          </Text>
+        </View>
       )}
     </AnimatedTouchable>
   );
@@ -136,6 +164,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: RADIUS.md,
     overflow: 'hidden',
+  },
+  iconImage: {
+    width: 30,
+    height: 30,
+    marginRight: SPACING.md,
   },
   primary: {
     backgroundColor: '#ba9a74',
@@ -174,7 +207,7 @@ const styles = StyleSheet.create({
     color: '#f8f4ef', // Changed from COLORS.white
   },
   primaryText: {
-    color: '#f8f4ef', // Changed from COLORS.white
+    color: '#f8f4ef',
   },
   secondaryText: {
     color: COLORS.white,
@@ -193,5 +226,14 @@ const styles = StyleSheet.create({
   },
   largeText: {
     fontSize: FONTS.sizes.lg,
+  },
+  contentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  icon: {
+    marginRight: SPACING.sm,
   },
 });

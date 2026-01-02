@@ -3,7 +3,7 @@
  * Main dashboard with animated background and game-like UI
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useLayoutEffect } from 'react';
 import {
   View,
   Text,
@@ -41,7 +41,10 @@ import { Modal } from '@/components/common/Modal';
 import { COLORS, FONTS, SPACING, RADIUS } from '@/utils/constants';
 import { formatNumber } from '@/utils/helpers';
 import { GradientBackground } from '@/components/common/GradientBackground';
-
+import { WatchAdButton } from '@/components/ads/WatchAdButton';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { claimAdReward } from '@/api/adApi';
+import { adMobService } from '@/services/adMobService';
 /**
  * Home screen with animated background and game-like UI
  */
@@ -145,6 +148,78 @@ export const HomeScreen: React.FC = () => {
     }
   };
 
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <View style={styles.headerRightContainer}>
+          <TouchableOpacity
+            style={styles.compactAdButton}
+            onPress={async () => {
+              if (!adMobService.isRewardedAdReady()) {
+                toast.info('Ad is loading, please wait...', 'short');
+                return;
+              }
+
+              const result = await adMobService.showRewardedAd();
+
+              if (!result.watched) {
+                toast.error('Failed to show ad', 'short');
+                return;
+              }
+
+              if (!result.earned) {
+                toast.info('Watch the full ad to earn reward', 'short');
+                return;
+              }
+
+              // Claim reward
+              try {
+                const rewardResult = await claimAdReward();
+                if (rewardResult.rewardGiven) {
+                  toast.success(
+                    `You earned ${rewardResult.coinsEarned} coins!`,
+                    'long',
+                  );
+                  if (user) {
+                    updateUserCoins(user.coins + rewardResult.coinsEarned);
+                  }
+                }
+              } catch (error) {
+                console.error('Claim reward error:', error);
+              }
+            }}
+          >
+            <MaterialCommunityIcons
+              name="play-circle"
+              size={20}
+              color={COLORS.success}
+            />
+            <Text style={styles.compactAdText}>Ad</Text>
+          </TouchableOpacity>
+
+          <View
+            ref={coinDisplayRef}
+            onLayout={() => {
+              setTimeout(() => {
+                coinDisplayRef.current?.measureInWindow(
+                  (x, y, width, height) => {
+                    setCoinPosition({
+                      x: x + width / 2,
+                      y: y + height / 2,
+                    });
+                    setCoinPositionMeasured(true);
+                  },
+                );
+              }, 100);
+            }}
+          >
+            <CoinDisplay coins={user?.coins ?? 0} onPress={handleCoinPress} />
+          </View>
+        </View>
+      ),
+    });
+  }, [navigation, user]);
+
   if (!user) {
     return (
       <SafeAreaView style={styles.container}>
@@ -189,31 +264,6 @@ export const HomeScreen: React.FC = () => {
             <View style={styles.userInfo}>
               <Text style={styles.welcomeText}>Welcome Back,</Text>
               <Text style={styles.username}>{user.displayName}</Text>
-            </View>
-            <View
-              ref={coinDisplayRef}
-              onLayout={() => {
-                // Delay measurement to ensure layout is complete
-                setTimeout(() => {
-                  coinDisplayRef.current?.measureInWindow(
-                    (x, y, width, height) => {
-                      console.log('Coin position measured:', {
-                        x,
-                        y,
-                        width,
-                        height,
-                      });
-                      setCoinPosition({
-                        x: x + width / 2,
-                        y: y + height / 2,
-                      });
-                      setCoinPositionMeasured(true);
-                    },
-                  );
-                }, 100);
-              }}
-            >
-              <CoinDisplay coins={user?.coins ?? 0} onPress={handleCoinPress} />
             </View>
           </View>
 
@@ -342,10 +392,11 @@ const styles = StyleSheet.create({
     opacity: 0.3,
   },
   scrollView: {
-    flex: 1,
+    flex: 2,
   },
   scrollContent: {
-    padding: SPACING.lg,
+    padding: SPACING.xl,
+    paddingBottom: SPACING.xxl,
   },
   header: {
     flexDirection: 'row',
@@ -408,7 +459,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   playCard: {
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.xxl,
     alignItems: 'center',
     backgroundColor: COLORS.card,
     // Ensure no elevation/shadow on card
@@ -504,5 +555,25 @@ const styles = StyleSheet.create({
   streakLabel: {
     fontSize: FONTS.sizes.sm,
     color: COLORS.textSecondary,
+  },
+  headerRightContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    marginRight: SPACING.md,
+  },
+  compactAdButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.success,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: RADIUS.md,
+    gap: 4,
+  },
+  compactAdText: {
+    fontSize: FONTS.sizes.xs,
+    fontWeight: FONTS.weights.bold,
+    color: COLORS.white,
   },
 });

@@ -22,6 +22,13 @@ export interface User {
     totalClaims: number;
     canClaim: boolean;
   };
+  dailyAdRewards?: {
+    lastAdDate: string | null;
+    adsWatchedToday: number;
+    rewardsClaimedToday: number;
+    maxRewardsPerDay: number;
+    coinsPerAd: number;
+  };
 }
 
 export interface AuthState {

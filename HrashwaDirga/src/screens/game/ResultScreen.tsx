@@ -18,6 +18,9 @@ import { COLORS, FONTS, SPACING } from '@/utils/constants';
 import { formatNumber } from '@/utils/helpers';
 import { GradientBackground } from '@/components/common/GradientBackground';
 import { useGameStore } from '@/store/gameStore';
+import { adMobService } from '@/services/adMobService';
+import { claimAdReward } from '@/api/adApi';
+import { toast } from '@/utils/toast';
 
 type ResultScreenParams = {
   levelId: string;
@@ -66,6 +69,11 @@ export const ResultScreen: React.FC = () => {
       setCompletionData(result);
       updateUserCoins(result.currentCoins);
       incrementLevel();
+
+      // ADD THIS - Show rewarded ad after successful completion
+      setTimeout(async () => {
+        await showRewardedAdAfterCompletion();
+      }, 1500); // Wait 1.5 seconds to let user see completion screen first
     } catch (err: any) {
       console.error('Level completion error:', err);
       if (err.response?.status === 400) {
@@ -78,12 +86,64 @@ export const ResultScreen: React.FC = () => {
     }
   };
 
-  const handleContinue = () => {
-    navigation.navigate('Levels' as never);
+  // ADD THIS NEW FUNCTION
+  const showRewardedAdAfterCompletion = async () => {
+    try {
+      if (!adMobService.isRewardedAdReady()) {
+        console.log('[ResultScreen] Rewarded ad not ready');
+        return;
+      }
+
+      const result = await adMobService.showRewardedAd();
+
+      if (!result.watched) {
+        // User closed ad without watching
+        return;
+      }
+
+      if (!result.earned) {
+        // User didn't watch full ad
+        toast.info('Watch the full ad to earn extra coins!', 'short');
+        return;
+      }
+
+      // User watched full ad, claim reward
+      const rewardResult = await claimAdReward();
+
+      if (rewardResult.rewardGiven) {
+        toast.success(
+          `Bonus! You earned ${rewardResult.coinsEarned} extra coins from ad!`,
+          'long',
+        );
+        updateUserCoins(rewardResult.newBalance);
+      } else {
+        toast.info('Daily ad reward limit reached', 'short');
+      }
+    } catch (error) {
+      console.error('[ResultScreen] Show rewarded ad error:', error);
+    }
+  };
+
+  const handleContinue = async () => {
+    // Show interstitial ad before continuing to next level
+    const shown = await adMobService.showInterstitialAd();
+    if (shown) {
+      console.log('[ResultScreen] Interstitial ad shown before continue');
+    }
+
+    // Reset navigation stack to prevent going back to completed game
+    navigation.reset({
+      index: 1,
+      routes: [{ name: 'Home' as never }, { name: 'Levels' as never }],
+    });
   };
 
   const handleBackHome = () => {
-    navigation.navigate('Home' as never);
+    // Reset navigation stack completely
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Home' as never }],
+    });
   };
 
   return (

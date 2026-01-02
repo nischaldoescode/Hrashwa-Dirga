@@ -11,6 +11,8 @@ import { AppNavigator } from './src/navigation/AppNavigator';
 import { useConfigStore } from '@/store/configStore';
 import { getConfig } from '@/api/configApi';
 import { cacheService } from '@/services/cacheService';
+import { adMobService } from '@/services/adMobService';
+
 /**
  * Root application component
  * Wraps app with necessary providers
@@ -21,6 +23,7 @@ const App: React.FC = () => {
       try {
         const config = await getConfig();
         useConfigStore.getState().setConfig(config);
+        await adMobService.initialize();
       } catch (error) {
         // Load from cache
         const cachedConfig = cacheService.getCachedConfig();

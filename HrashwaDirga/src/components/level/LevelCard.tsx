@@ -161,65 +161,72 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     backgroundColor: COLORS.card,
     borderRadius: RADIUS.xl,
-    padding: SPACING.sm,
+    padding: SPACING.md,
     margin: SPACING.xs,
-    borderWidth: 2,
+    borderWidth: 3, // Thicker border
     borderColor: COLORS.primary,
     justifyContent: 'space-between',
     alignItems: 'center',
     shadowColor: COLORS.primaryDark,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 5,
-    overflow: 'hidden', // ADD THIS to clip water fill
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 8,
+    overflow: 'hidden',
   },
   locked: {
-    backgroundColor: COLORS.cardLight,
+    backgroundColor: COLORS.backgroundLight,
     borderColor: COLORS.border,
-    opacity: 0.7,
+    opacity: 0.6,
   },
   completed: {
     borderColor: COLORS.success,
-    borderWidth: 3,
+    borderWidth: 4, // Even thicker for completed
+    backgroundColor: '#F0FDF4', // Subtle green tint
   },
   header: {
     width: '100%',
     alignItems: 'center',
   },
   levelNumber: {
-    fontSize: FONTS.sizes.xxl,
+    fontSize: FONTS.sizes.xxxl,
     fontWeight: FONTS.weights.bold,
     color: COLORS.primary,
+    textShadowColor: 'rgba(184, 149, 106, 0.3)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   iconContainer: {
-    width: 50,
-    height: 50,
+    width: 60, // Larger icon container
+    height: 60,
     borderRadius: RADIUS.full,
-    backgroundColor: COLORS.backgroundLight,
+    backgroundColor: COLORS.primaryLight,
     justifyContent: 'center',
     alignItems: 'center',
-    marginVertical: SPACING.xs,
+    marginVertical: SPACING.sm,
+    borderWidth: 3,
+    borderColor: COLORS.primary,
   },
   lockIcon: {
-    fontSize: FONTS.sizes.xl,
+    fontSize: FONTS.sizes.xxl,
   },
   checkIcon: {
-    fontSize: FONTS.sizes.xxl,
+    fontSize: FONTS.sizes.xxxl,
     fontWeight: FONTS.weights.bold,
     color: COLORS.success,
   },
   playIcon: {
-    fontSize: FONTS.sizes.xl,
+    fontSize: FONTS.sizes.xxl,
     color: COLORS.primary,
     marginLeft: 4,
   },
   levelName: {
-    fontSize: FONTS.sizes.sm,
-    fontWeight: FONTS.weights.semiBold,
+    fontSize: FONTS.sizes.md,
+    fontWeight: FONTS.weights.bold,
     color: COLORS.text,
     textAlign: 'center',
-    marginBottom: SPACING.xs,
+    marginBottom: SPACING.sm,
+    lineHeight: FONTS.sizes.md * 1.3,
   },
   progressContainer: {
     width: '100%',
@@ -227,15 +234,15 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     width: '100%',
-    height: 4,
+    height: 6, // Thicker progress bar
     backgroundColor: COLORS.backgroundLight,
     borderRadius: RADIUS.full,
     overflow: 'hidden',
-    marginBottom: SPACING.xs,
+    marginBottom: SPACING.sm,
   },
   progressText: {
-    fontSize: FONTS.sizes.xs,
-    fontWeight: FONTS.weights.medium,
+    fontSize: FONTS.sizes.sm,
+    fontWeight: FONTS.weights.semiBold,
     color: COLORS.textSecondary,
   },
   progressFill: {
@@ -246,19 +253,17 @@ const styles = StyleSheet.create({
   lockedText: {
     color: COLORS.textTertiary,
   },
-
   waterFill: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(45, 122, 79, 0.35)',
+    backgroundColor: 'rgba(45, 122, 79, 0.15)', // More subtle
     borderRadius: RADIUS.xl,
     zIndex: 0,
-    // Add wave effect for more visual interest
     shadowColor: COLORS.success,
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
   },
 });

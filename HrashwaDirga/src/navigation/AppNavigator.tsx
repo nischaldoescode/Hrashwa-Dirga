@@ -12,12 +12,16 @@ import { notificationService } from '@/services/notificationService';
 import { AuthNavigator } from './AuthNavigator';
 import { MainNavigator } from './MainNavigator';
 import SplashScreen from 'react-native-splash-screen';
+import { adMobService } from '@/services/adMobService';
+import { useAppOpenAd } from '@/hooks/useAppOpenAd';
 
 export const AppNavigator: React.FC = () => {
+  useAppOpenAd();
   const { isAuthenticated, restoreSession, isLoading, setLoading } =
     useAuthStore();
   const { loadEssentialData, syncOfflineData } = useCache();
   const [initializing, setInitializing] = React.useState(true);
+
 
   useEffect(() => {
     initializeApp();
@@ -39,7 +43,6 @@ export const AppNavigator: React.FC = () => {
       // Initialize services
       authService.initialize();
       await notificationService.initialize();
-
       // Restore session from cache
       restoreSession();
 

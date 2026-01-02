@@ -65,6 +65,9 @@ export interface HintResponse {
     optionToRemove: string;
     coinsRemaining: number;
   };
+  // Add these for backward compatibility if backend sends them at root level
+  optionToRemove?: string;
+  coinsRemaining?: number;
 }
 
 export interface LeaderboardEntry {

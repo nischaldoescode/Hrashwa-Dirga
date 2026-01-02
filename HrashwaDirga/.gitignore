@@ -107,3 +107,6 @@ expo-env.d.ts
 
 # Restrict Profile screen
 src/screens/profile/ProfileScreen.tsx
+src/services/authService.ts
+src/services/adMobService.ts
+src/hooks/useAppOpenAd.ts

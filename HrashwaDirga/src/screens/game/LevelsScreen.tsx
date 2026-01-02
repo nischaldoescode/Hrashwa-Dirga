@@ -28,6 +28,7 @@ import { Modal } from '@/components/common/Modal';
 import { COLORS, FONTS, SPACING } from '@/utils/constants';
 import { Level } from '@/types/game.types';
 import { GradientBackground } from '@/components/common/GradientBackground';
+import { adMobService } from '@/services/adMobService';
 
 // Add type definition at top of file
 type RootStackParamList = {
@@ -48,6 +49,7 @@ export const LevelsScreen: React.FC = () => {
     useGameStore();
   const { isOnline, showOfflineBanner } = useNetworkStore();
   const [showNoDataModal, setShowNoDataModal] = useState(false);
+  const levelOpenCount = React.useRef(0);
 
   useEffect(() => {
     loadLevels();
@@ -80,8 +82,19 @@ export const LevelsScreen: React.FC = () => {
     }
   };
 
-  const handleLevelPress = (level: Level) => {
+  const handleLevelPress = async (level: Level) => {
     if (!level.isUnlocked) return;
+
+    // Increment counter
+    levelOpenCount.current += 1;
+
+    // Show interstitial ad every 2nd level opening
+    if (levelOpenCount.current % 2 === 0) {
+      const shown = await adMobService.showInterstitialAd();
+      if (shown) {
+        console.log('[LevelsScreen] Interstitial ad shown');
+      }
+    }
 
     navigation.navigate('Game', { levelId: level.id });
   };
