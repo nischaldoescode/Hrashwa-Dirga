@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "509425229960",
+    "project_id": "hrashwa-dirga",
+    "storage_bucket": "hrashwa-dirga.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:509425229960:android:db01cdf0100a2d3ab37f3d",
+        "android_client_info": {
+          "package_name": "com.hrashwadirga"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "509425229960-3pvttqs94hmpm2fi3ju4sb1b04consa1.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.hrashwadirga",
+            "certificate_hash": "2c505bf5f3c5881ed24c2ee6cf9e9f630988211c"
+          }
+        },
+        {
+          "client_id": "509425229960-ctg5998ip8rgi8lijc19rpkv70dk284c.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.hrashwadirga",
+            "certificate_hash": "2fd5987a34cb311b268948f531b1cc3f5d3d808c"
+          }
+        },
+        {
+          "client_id": "509425229960-cubf8omantrg5t3f5hj9rgdko9bbjvi7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-_yahZeCA31cmc6M9ZJBd2--1luraFSI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "509425229960-cubf8omantrg5t3f5hj9rgdko9bbjvi7.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
