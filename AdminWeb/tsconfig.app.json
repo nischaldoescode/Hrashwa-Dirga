@@ -28,8 +28,6 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
-    /* Temporary: silence TS6 baseUrl warning */
-    "ignoreDeprecations": "6.0"
   },
   "include": ["src"]
 }
