@@ -103,7 +103,9 @@ const logOutboundIP = async () => {
   try {
     const res = await fetch('https://api.ipify.org?format=json');
     const data = await res.json();
+    // Log the outbound IP for Redis allowlist
     console.log('Outbound IP (for Redis allowlist):', data.ip);
+    
   } catch (err) {
     console.error('Failed to fetch outbound IP:', err.message);
   }
@@ -118,7 +120,7 @@ const startServer = async () => {
     
     configureCloudinary();
     logOutboundIP();
-    
+
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
       console.log(`Environment: ${process.env.NODE_ENV}`);
