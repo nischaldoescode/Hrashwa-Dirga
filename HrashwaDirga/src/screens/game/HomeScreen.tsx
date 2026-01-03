@@ -12,6 +12,7 @@ import {
   RefreshControl,
   StatusBar,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import {
   getDailyClaimStatus,
@@ -43,8 +44,10 @@ import { formatNumber } from '@/utils/helpers';
 import { GradientBackground } from '@/components/common/GradientBackground';
 import { WatchAdButton } from '@/components/ads/WatchAdButton';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { claimAdReward } from '@/api/adApi';
+import { claimAdReward, getAdRewardStatus } from '@/api/adApi';
 import { adMobService } from '@/services/adMobService';
+import { WatchAdButtonSmall } from '@/components/ads/WatchAdButtonSmall';
+
 /**
  * Home screen with animated background and game-like UI
  */
@@ -148,78 +151,6 @@ export const HomeScreen: React.FC = () => {
     }
   };
 
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerRight: () => (
-        <View style={styles.headerRightContainer}>
-          <TouchableOpacity
-            style={styles.compactAdButton}
-            onPress={async () => {
-              if (!adMobService.isRewardedAdReady()) {
-                toast.info('Ad is loading, please wait...', 'short');
-                return;
-              }
-
-              const result = await adMobService.showRewardedAd();
-
-              if (!result.watched) {
-                toast.error('Failed to show ad', 'short');
-                return;
-              }
-
-              if (!result.earned) {
-                toast.info('Watch the full ad to earn reward', 'short');
-                return;
-              }
-
-              // Claim reward
-              try {
-                const rewardResult = await claimAdReward();
-                if (rewardResult.rewardGiven) {
-                  toast.success(
-                    `You earned ${rewardResult.coinsEarned} coins!`,
-                    'long',
-                  );
-                  if (user) {
-                    updateUserCoins(user.coins + rewardResult.coinsEarned);
-                  }
-                }
-              } catch (error) {
-                console.error('Claim reward error:', error);
-              }
-            }}
-          >
-            <MaterialCommunityIcons
-              name="play-circle"
-              size={20}
-              color={COLORS.success}
-            />
-            <Text style={styles.compactAdText}>Ad</Text>
-          </TouchableOpacity>
-
-          <View
-            ref={coinDisplayRef}
-            onLayout={() => {
-              setTimeout(() => {
-                coinDisplayRef.current?.measureInWindow(
-                  (x, y, width, height) => {
-                    setCoinPosition({
-                      x: x + width / 2,
-                      y: y + height / 2,
-                    });
-                    setCoinPositionMeasured(true);
-                  },
-                );
-              }, 100);
-            }}
-          >
-            <CoinDisplay coins={user?.coins ?? 0} onPress={handleCoinPress} />
-          </View>
-        </View>
-      ),
-    });
-  }, [navigation, user]);
-
   if (!user) {
     return (
       <SafeAreaView style={styles.container}>
@@ -259,11 +190,47 @@ export const HomeScreen: React.FC = () => {
             />
           }
         >
-          {/* Header with user info and coins */}
+          {/* Header with user info, ad button, and coins */}
           <View style={styles.header}>
             <View style={styles.userInfo}>
               <Text style={styles.welcomeText}>Welcome Back,</Text>
               <Text style={styles.username}>{user.displayName}</Text>
+            </View>
+
+            <View style={styles.headerActionsContainer}>
+              {/* Small Watch Ad Button */}
+              <WatchAdButtonSmall
+                user={user}
+                onRewardClaimed={coins => {
+                  updateUserCoins(user.coins + coins);
+                }}
+              />
+
+              {/* Small Coin Display */}
+              <TouchableOpacity
+                style={styles.smallCoinButton}
+                onPress={handleCoinPress}
+                activeOpacity={0.7}
+                ref={coinDisplayRef}
+                onLayout={() => {
+                  setTimeout(() => {
+                    coinDisplayRef.current?.measureInWindow(
+                      (x, y, width, height) => {
+                        setCoinPosition({
+                          x: x + width / 2,
+                          y: y + height / 2,
+                        });
+                        setCoinPositionMeasured(true);
+                      },
+                    );
+                  }, 100);
+                }}
+              >
+                <Text style={styles.coinIcon}>💰</Text>
+                <Text style={styles.smallCoinText}>
+                  {formatNumber(user?.coins ?? 0)}
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -555,6 +522,33 @@ const styles = StyleSheet.create({
   streakLabel: {
     fontSize: FONTS.sizes.sm,
     color: COLORS.textSecondary,
+  },
+  headerActionsContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: SPACING.xs,
+  },
+  smallCoinButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: RADIUS.md,
+    gap: 6,
+    shadowColor: COLORS.primaryDark,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  coinIcon: {
+    fontSize: 16,
+  },
+  smallCoinText: {
+    fontSize: FONTS.sizes.sm,
+    fontWeight: FONTS.weights.bold,
+    color: COLORS.white,
   },
   headerRightContainer: {
     flexDirection: 'row',

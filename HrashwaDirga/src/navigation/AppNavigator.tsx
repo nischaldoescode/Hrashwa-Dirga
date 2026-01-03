@@ -37,27 +37,43 @@ export const AppNavigator: React.FC = () => {
    * 5. Hide native splash screen
    */
   const initializeApp = async () => {
-    try {
-      setLoading(true);
+      try {
+        setLoading(true);
 
-      // Initialize services
-      authService.initialize();
-      await notificationService.initialize();
-      // Restore session from cache
-      restoreSession();
+        console.log('[AppNavigator] Starting app initialization...');
 
-      // Load data for authenticated users
-      if (isAuthenticated) {
-        await loadEssentialData();
-        await syncOfflineData();
+        // Initialize AdMob FIRST before anything else
+        console.log('[AppNavigator] Initializing AdMob...');
+        await adMobService.initialize();
+        
+        // Wait 1 second to ensure ads start loading
+        await new Promise(resolve => setTimeout(() => resolve(undefined), 1000));
+        
+        console.log('[AppNavigator] Initializing auth service...');
+        authService.initialize();
+        
+        console.log('[AppNavigator] Initializing notifications...');
+        await notificationService.initialize();
+        
+        // Restore session from cache
+        console.log('[AppNavigator] Restoring session...');
+        restoreSession();
+
+        // Load data for authenticated users
+        if (isAuthenticated) {
+          console.log('[AppNavigator] Loading user data...');
+          await loadEssentialData();
+          await syncOfflineData();
+        }
+        
+        console.log('[AppNavigator] ✅ App initialization complete');
+      } catch (error) {
+        console.error('[AppNavigator] ❌ App initialization error:', error);
+      } finally {
+        setLoading(false);
+        setInitializing(false);
       }
-    } catch (error) {
-      console.error('App initialization error:', error);
-    } finally {
-      setLoading(false);
-      setInitializing(false);
-    }
-  };
+    };
 
   // Hide splash screen after initialization completes
   useEffect(() => {

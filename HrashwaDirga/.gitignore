@@ -110,3 +110,4 @@ src/screens/profile/ProfileScreen.tsx
 src/services/authService.ts
 src/services/adMobService.ts
 src/hooks/useAppOpenAd.ts
+android/app/google-services.json
