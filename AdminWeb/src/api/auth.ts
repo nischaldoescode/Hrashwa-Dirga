@@ -4,7 +4,7 @@
  */
 
 import axiosInstance from './axios'
-import type { ApiResponse, DashboardStats, Admin } from '@/types'
+import type { ApiResponse, Admin } from '@/types'
 
 /**
  * Admin login with email and password
