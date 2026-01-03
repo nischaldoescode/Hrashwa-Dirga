@@ -22,7 +22,7 @@ const getApiBaseUrl = (): string => {
   }
 
   // Production URL
-  return 'https://your-production-api.com/api';
+  return 'https://hrashwa-dirga-backend.onrender.com/api';
 };
 
 export const API_BASE_URL = getApiBaseUrl();
