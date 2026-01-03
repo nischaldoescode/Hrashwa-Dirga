@@ -31,6 +31,7 @@ build/
 coverage/
 
 # Firebase / Google credentials
+*-firebase-adminsdk-*.json
 serviceAccountKey.json
 
 # Temporary files
