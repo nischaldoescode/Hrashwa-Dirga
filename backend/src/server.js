@@ -99,6 +99,16 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
+const logOutboundIP = async () => {
+  try {
+    const res = await fetch('https://api.ipify.org?format=json');
+    const data = await res.json();
+    console.log('Outbound IP (for Redis allowlist):', data.ip);
+  } catch (err) {
+    console.error('Failed to fetch outbound IP:', err.message);
+  }
+};
+
 const startServer = async () => {
   try {
     initializeRedis();
@@ -107,6 +117,7 @@ const startServer = async () => {
     initializeFirebase();
     
     configureCloudinary();
+    logOutboundIP();
     
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
