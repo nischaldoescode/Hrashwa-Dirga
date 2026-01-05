@@ -111,3 +111,4 @@ src/services/authService.ts
 src/services/adMobService.ts
 src/hooks/useAppOpenAd.ts
 android/app/google-services.json
+src/services/authService.ts
