@@ -915,6 +915,70 @@
         color: var(--cream);
       }
 
+      /* — PLAY STORE BUTTON — */
+      .playstore-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.85rem;
+        background: rgba(247, 244, 240, 0.07);
+        border: 1.5px solid rgba(247, 244, 240, 0.22);
+        color: var(--cream);
+        padding: 0.75rem 1.5rem;
+        border-radius: 14px;
+        text-decoration: none;
+        transition: all 0.3s;
+      }
+      .playstore-btn:hover {
+        background: rgba(247, 244, 240, 0.15);
+        border-color: rgba(247, 244, 240, 0.45);
+        transform: translateY(-2px);
+      }
+      .playstore-icon {
+        width: 26px;
+        height: 26px;
+        flex-shrink: 0;
+      }
+      .playstore-text {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        line-height: 1;
+      }
+      .playstore-sub {
+        font-size: 0.62rem;
+        letter-spacing: 0.08em;
+        opacity: 0.65;
+        margin-bottom: 2px;
+      }
+      .playstore-name {
+        font-size: 1rem;
+        font-weight: 500;
+      }
+
+      /* hero play store inline link */
+      .hero-store-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: rgba(62, 54, 46, 0.07);
+        border: 1px solid rgba(62, 54, 46, 0.12);
+        color: var(--deep);
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-size: 0.78rem;
+        text-decoration: none;
+        margin-bottom: 1.25rem;
+        transition: all 0.2s;
+      }
+      .hero-store-link:hover {
+        background: rgba(62, 54, 46, 0.12);
+        transform: translateY(-1px);
+      }
+      .hero-store-link svg {
+        width: 16px;
+        height: 16px;
+      }
+
       /* — FOOTER — */
       footer {
         padding: 3rem;
@@ -1051,11 +1115,20 @@
           gap: 3rem;
           text-align: center;
         }
+        .hero-label {
+          margin-left: auto;
+          margin-right: auto;
+        }
+        .hero-store-link {
+          margin-left: auto;
+          margin-right: auto;
+        }
         .hero-sub {
           margin: 0 auto 2.5rem;
         }
         .hero-actions {
           justify-content: center;
+          flex-wrap: wrap;
         }
         .hero-stats {
           justify-content: center;
@@ -1096,7 +1169,21 @@
           padding: 4rem 1.5rem;
         }
         .cta-inner {
-          padding: 3rem 2rem;
+          padding: 3rem 1.5rem;
+        }
+        .cta-buttons {
+          flex-direction: column;
+          align-items: center;
+        }
+        .playstore-btn {
+          width: 100%;
+          max-width: 260px;
+          justify-content: center;
+        }
+        .btn-outline-light {
+          width: 100%;
+          max-width: 260px;
+          justify-content: center;
         }
         footer {
           flex-direction: column;
@@ -1107,6 +1194,33 @@
           justify-content: center;
           flex-wrap: wrap;
           gap: 1.5rem;
+        }
+      }
+      @media (max-width: 520px) {
+        .hero h1 {
+          font-size: 2.6rem;
+        }
+        .phone-mockup {
+          width: 210px;
+        }
+        .steps-grid {
+          grid-template-columns: 1fr;
+        }
+        .features-grid {
+          gap: 1px;
+        }
+        .feature-card {
+          padding: 1.75rem;
+        }
+        .hero-stats {
+          gap: 1.5rem;
+        }
+        .leaderboard-visual {
+          padding: 1rem;
+        }
+        .lb-row {
+          padding: 0.6rem 0.75rem;
+          gap: 0.6rem;
         }
       }
     </style>
@@ -1129,6 +1243,29 @@
     <section class="hero">
       <div class="hero-content">
         <div class="hero-label">Knowledge Game · Global Rankings</div>
+        <a
+          href="YOUR_PLAY_STORE_LINK_HERE"
+          class="hero-store-link"
+          target="_blank"
+          rel="noopener"
+        >
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path
+              fill="#4CAF50"
+              d="M1.22 0L13.4 12 1.22 24c-.43-.1-.75-.5-.75-.95V.95C.47.5.79.1 1.22 0z"
+            />
+            <path fill="#FF3D00" d="M17.5 8.5L4.13 1.1l10.45 10.45L17.5 8.5z" />
+            <path
+              fill="#FFD600"
+              d="M22.28 10.6c.44.25.72.7.72 1.4s-.28 1.15-.72 1.4l-3.2 1.8-3.4-3.4 3.4-3.4 3.2 1.8z"
+            />
+            <path
+              fill="#FF3D00"
+              d="M4.13 22.9L17.5 15.5l-2.92-2.96L4.13 22.9z"
+            />
+          </svg>
+          Available on Google Play
+        </a>
         <h1>Challenge your <em>mind</em>, climb the ranks</h1>
         <p class="hero-sub">
           Hrashwa Dirga is a progressive knowledge game where every correct
@@ -1415,7 +1552,39 @@
           rankings, and earning rewards — completely free.
         </p>
         <div class="cta-buttons">
-          <a href="#" class="btn-light">Download on Android →</a>
+          <a
+            href="YOUR_PLAY_STORE_LINK_HERE"
+            class="playstore-btn"
+            target="_blank"
+            rel="noopener"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              class="playstore-icon"
+            >
+              <path
+                fill="#4CAF50"
+                d="M1.22 0L13.4 12 1.22 24c-.43-.1-.75-.5-.75-.95V.95C.47.5.79.1 1.22 0z"
+              />
+              <path
+                fill="#FF3D00"
+                d="M17.5 8.5L4.13 1.1l10.45 10.45L17.5 8.5z"
+              />
+              <path
+                fill="#FFD600"
+                d="M22.28 10.6c.44.25.72.7.72 1.4s-.28 1.15-.72 1.4l-3.2 1.8-3.4-3.4 3.4-3.4 3.2 1.8z"
+              />
+              <path
+                fill="#FF3D00"
+                d="M4.13 22.9L17.5 15.5l-2.92-2.96L4.13 22.9z"
+              />
+            </svg>
+            <div class="playstore-text">
+              <span class="playstore-sub">Get it on</span>
+              <span class="playstore-name">Google Play</span>
+            </div>
+          </a>
         </div>
       </div>
     </section>
@@ -1423,6 +1592,11 @@
     <!-- FOOTER -->
     <footer>
       <a href="#" class="footer-logo">Hrashwa <span>Dirga</span></a>
+      <ul class="footer-links">
+        <li><a href="#">Privacy Policy</a></li>
+        <li><a href="#">Terms</a></li>
+        <li><a href="mailto:support@vidhgrow.online">Support</a></li>
+      </ul>
       <div class="footer-copy">© 2024 Hrashwa Dirga. All rights reserved.</div>
     </footer>
 
