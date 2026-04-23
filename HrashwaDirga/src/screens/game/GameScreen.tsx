@@ -47,6 +47,13 @@ import { GradientBackground } from '@/components/common/GradientBackground';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import { getProfile } from '@/api/authApi';
 import { adMobService } from '@/services/adMobService';
+import { ScrollAwareHeader } from '@/components/common/ScrollAwareHeader';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, {
+  useSharedValue,
+  useAnimatedScrollHandler,
+  FadeInDown,
+} from 'react-native-reanimated';
 
 type GameScreenParamList = {
   Game: { levelId: string };
@@ -54,7 +61,9 @@ type GameScreenParamList = {
 };
 
 type GameScreenRouteProp = RouteProp<GameScreenParamList, 'Game'>;
-type GameScreenNavigationProp = NavigationProp<GameScreenParamList>;
+type GameScreenNavigationProp = NavigationProp<GameScreenParamList> & {
+  replace: (name: string, params?: object) => void;
+};
 
 /**
  * Game screen with question answering logic
@@ -89,6 +98,13 @@ export const GameScreen: React.FC = () => {
   const [currentLevelName, setCurrentLevelName] = useState('');
 
   const currentQuestion = currentQuestions[currentQuestionIndex];
+  const insets = useSafeAreaInsets();
+  const scrollY = useSharedValue(0);
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: e => {
+      scrollY.value = e.contentOffset.y;
+    },
+  });
 
   // Add effect to monitor network status:
   useEffect(() => {
@@ -183,6 +199,12 @@ export const GameScreen: React.FC = () => {
         }));
         setCurrentQuestions(questionsWithShuffled);
         setCurrentLevelName(data.level.levelName);
+
+        /**
+         * if every question in this level is already completed,
+         * skip straight to the result screen.
+         * this prevents showing greyed-out completed options to the user.
+         */
       } else {
         const cached = cacheService.getCachedQuestions(levelId);
         if (cached) {
@@ -210,7 +232,7 @@ export const GameScreen: React.FC = () => {
     }
   };
 
-  // // New function for auto-submit
+  // function for auto-submit
   // const handleSubmitAnswerAuto = async (answer: string) => {
   //   if (!currentQuestion || !user) return;
 
@@ -267,7 +289,6 @@ export const GameScreen: React.FC = () => {
   //       setOfflineQueue(newQueue);
   //       storageService.setObject(STORAGE_KEYS.OFFLINE_QUEUE, newQueue);
 
-  //       // ⚠️ CRITICAL: Cannot determine correctness offline without exposing answer
   //       // Show placeholder result that will be corrected on sync
   //       toast.warning(
   //         'Offline mode: Answer will be validated when online',
@@ -416,7 +437,7 @@ export const GameScreen: React.FC = () => {
 
       const optionToRemove = result.data.optionToRemove;
       const coinsRemaining = result.data.coinsRemaining;
-      const hintsRemaining = result.data.hintsRemainingToday || 0;
+      const hintsRemaining = (result.data as any).hintsRemainingToday || 0;
 
       if (!optionToRemove) {
         console.error('No option to remove in response:', result);
@@ -456,12 +477,13 @@ export const GameScreen: React.FC = () => {
     if (currentQuestionIndex < currentQuestions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     } else {
-      // CLEAR GAME STATE BEFORE NAVIGATING
+      /**
+       * last question done — clear game state and go to result.
+       * works for both first-time play and review mode.
+       */
       setCurrentQuestions([]);
       setCurrentQuestionIndex(0);
       setCurrentLevel(null);
-
-      // Navigate to result screen
       navigation.navigate('Result', { levelId });
     }
   };
@@ -514,88 +536,127 @@ export const GameScreen: React.FC = () => {
 
   return (
     <GradientBackground variant="game">
-      <SafeAreaView style={styles.container}>
-        <StatusBar
-          barStyle="dark-content"
-          backgroundColor="transparent"
-          translucent
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="transparent"
+        translucent
+      />
+
+      {/**
+       * scroll-aware header shows level name + coin count.
+       * replaces the old fixed header and IN GAME pill.
+       */}
+      <ScrollAwareHeader
+        title={currentLevelName || 'GAME'}
+        scrollY={scrollY}
+        borderColor="#DDD4C8"
+        fillColor={COLORS.primaryDark}
+        bgColor="rgba(247,244,240,0.94)"
+        textColor={COLORS.text}
+        icon={
+          <View style={styles.headerCoinBadge}>
+            <Text style={styles.headerCoinText}>💰 {user?.coins || 0}</Text>
+          </View>
+        }
+      />
+
+      <Animated.ScrollView
+        onScroll={scrollHandler}
+        scrollEventThrottle={16}
+        style={styles.scrollView}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: insets.top + 100 },
+        ]}
+        scrollEnabled={true}
+        keyboardShouldPersistTaps="always"
+        nestedScrollEnabled={false}
+      >
+        {/** progress bar inside scroll — visible as user reads question */}
+        <ProgressBar
+          current={currentQuestionIndex + 1}
+          total={currentQuestions.length}
+          label=""
         />
 
-        <View style={styles.header}>
-          <ProgressBar
-            current={currentQuestionIndex + 1}
-            total={currentQuestions.length}
-            label={currentLevelName}
-          />
-          <CoinDisplay coins={user?.coins || 0} />
-        </View>
-
-        <View style={styles.gameIndicator}>
-          <View style={styles.gameIndicatorDot} />
-          <Text style={styles.gameIndicatorText}>IN GAME</Text>
-          <View style={styles.gameIndicatorDot} />
-        </View>
-
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          scrollEnabled={true}
-          keyboardShouldPersistTaps="always"
-          nestedScrollEnabled={false}
-        >
-          {/* Question counter outside card - more professional */}
-          <View style={styles.questionHeader}>
-            <Text style={styles.questionCounter}>
-              Question {currentQuestionIndex + 1} of {currentQuestions.length}
-            </Text>
-            <View style={styles.questionProgress}>
-              <View
-                style={[
-                  styles.questionProgressFill,
-                  {
-                    width: `${
-                      ((currentQuestionIndex + 1) / currentQuestions.length) *
-                      100
-                    }%`,
-                  },
-                ]}
-              />
-            </View>
+        {/* Question counter outside card - more professional */}
+        <View style={styles.questionHeader}>
+          <Text style={styles.questionCounter}>
+            Question {currentQuestionIndex + 1} of {currentQuestions.length}
+          </Text>
+          <View style={styles.questionProgress}>
+            <View
+              style={[
+                styles.questionProgressFill,
+                {
+                  width: `${
+                    ((currentQuestionIndex + 1) / currentQuestions.length) * 100
+                  }%`,
+                },
+              ]}
+            />
           </View>
+        </View>
 
-          <QuestionCard questionText={currentQuestion.questionText} />
+        <QuestionCard questionText={currentQuestion.questionText} />
 
-          <View style={styles.optionsContainer}>
-            {filteredOptions.map((option, originalIndex) => {
-              // ADDED: Check if question was previously completed
-              const wasAlreadyCompleted = currentQuestion.isCompleted;
+        <View style={styles.optionsContainer}>
+          {currentQuestion.isCompleted ? (
+            <Animated.View
+              entering={FadeInDown.duration(350)}
+              style={styles.completedQuestionSummary}
+            >
+              {/** correct answer reveal card */}
+              <Animated.View
+                entering={FadeInDown.delay(80).duration(350)}
+                style={styles.correctAnswerReveal}
+              >
+                <View style={styles.correctAnswerIconRow}>
+                  <View style={styles.correctAnswerIcon}>
+                    <Text style={styles.correctAnswerIconText}>✓</Text>
+                  </View>
+                  <Text style={styles.correctAnswerHeading}>
+                    Correct Answer
+                  </Text>
+                </View>
+                <Text style={styles.correctAnswerText}>
+                  {currentQuestion.userAnswer?.correctAnswer ??
+                    currentQuestion.correctAnswer}
+                </Text>
+              </Animated.View>
 
-              const isCompletedAndCorrect =
-                wasAlreadyCompleted &&
-                currentQuestion.correctAnswer &&
-                option === currentQuestion.correctAnswer;
-
-              const isCompletedAndWrong =
-                wasAlreadyCompleted &&
-                currentQuestion.userAnswer &&
-                option === currentQuestion.userAnswer.selectedAnswer &&
-                !currentQuestion.userAnswer.isCorrect;
-
+              {/** user result badge */}
+              <Animated.View
+                entering={FadeInDown.delay(160).duration(350)}
+                style={[
+                  styles.userResultBadge,
+                  currentQuestion.userAnswer?.isCorrect
+                    ? styles.userResultCorrect
+                    : styles.userResultWrong,
+                ]}
+              >
+                <Text style={styles.userResultLabel}>
+                  {currentQuestion.userAnswer?.isCorrect
+                    ? 'You answered correctly'
+                    : `You answered: ${
+                        currentQuestion.userAnswer?.selectedAnswer ?? '—'
+                      }`}
+                </Text>
+              </Animated.View>
+            </Animated.View>
+          ) : (
+            filteredOptions.map((option, originalIndex) => {
               const isThisCorrectAnswer =
                 showResult &&
-                answerResult &&
-                answerResult.data &&
+                answerResult?.data &&
                 option === answerResult.data.correctAnswer;
 
               const isThisWrongAnswer =
                 showResult &&
-                answerResult &&
-                answerResult.data &&
+                answerResult?.data &&
                 option === selectedAnswer &&
                 selectedAnswer !== answerResult.data.correctAnswer;
 
-              // Find the real index in the original shuffled options
-              // This ensures A, B, C labels are consistent
               const realIndex =
                 currentQuestionFromStore?.shuffledOptions?.indexOf(option) ??
                 originalIndex;
@@ -605,149 +666,168 @@ export const GameScreen: React.FC = () => {
                   key={option}
                   option={option}
                   index={realIndex}
-                  selected={
-                    wasAlreadyCompleted ? false : selectedAnswer === option
-                  }
-                  disabled={showResult || !!wasAlreadyCompleted}
-                  isCorrect={!!(isThisCorrectAnswer || isCompletedAndCorrect)}
-                  isWrong={!!(isThisWrongAnswer || isCompletedAndWrong)}
+                  selected={selectedAnswer === option}
+                  disabled={showResult}
+                  isCorrect={!!isThisCorrectAnswer}
+                  isWrong={!!isThisWrongAnswer}
                   isRemoved={false}
                   onPress={() => handleAnswerSelect(option)}
                 />
               );
-            })}
-          </View>
-
-          {!showResult && !currentQuestion.isCompleted && (
-            <View style={styles.hintSection}>
-              <HintButton
-                onPress={handleUseHint}
-                disabled={
-                  currentQuestion.isCompleted ||
-                  (currentQuestion.hintsUsed || 0) >= 2 ||
-                  !isOnline
-                }
-                hintCost={15}
-                userCoins={user?.coins || 0}
-                isOffline={!isOnline}
-              />
-            </View>
+            })
           )}
+        </View>
 
-          {showResult && answerResult && answerResult.data && (
-            <>
-              <ScoreAnimation
-                score={answerResult.data.scoreEarned}
-                totalScore={answerResult.data.currentScore}
-                visible={showResult}
-                isCorrect={answerResult.data.isCorrect}
-              />
-            </>
-          )}
-
-          {showResult && (
-            <Button
-              title={
-                currentQuestionIndex < currentQuestions.length - 1
-                  ? 'Next Question'
-                  : 'Complete Level'
-              }
-              onPress={handleNextQuestion}
-              variant="primary"
-              size="large"
-              fullWidth
-              style={styles.submitButton}
+        {!showResult && !currentQuestion.isCompleted && (
+          <View style={styles.hintSection}>
+            <HintButton
+              onPress={handleUseHint}
+              disabled={currentQuestion.isCompleted || !isOnline}
+              hintCost={15}
+              userCoins={user?.coins || 0}
+              isOffline={!isOnline}
+              /**
+               * pass actual hints remaining from the last hint response.
+               * defaults to a high number so button shows as available
+               * until the backend tells us otherwise via the toast.
+               */
+              hintsRemainingToday={5}
             />
-          )}
-        </ScrollView>
-
-        <Modal
-          visible={showExitModal}
-          title="Exit Game"
-          message="Are you sure you want to exit? Your progress will be saved."
-          onClose={() => setShowExitModal(false)}
-          onConfirm={handleExit}
-          confirmText="Exit"
-          cancelText="Continue Playing"
-          type="warning"
-        />
-
-        {/* DEBUG OVERLAY - REMOVE AFTER FIXING */}
-        {__DEV__ && (
-          <View
-            style={{
-              position: 'absolute',
-              top: 100,
-              right: 10,
-              backgroundColor: 'rgba(0,0,0,0.7)',
-              padding: 10,
-              borderRadius: 8,
-            }}
-          >
-            <Text style={{ color: 'white', fontSize: 10 }}>
-              Selected: {selectedAnswer || 'none'}
-            </Text>
-            <Text style={{ color: 'white', fontSize: 10 }}>
-              ShowResult: {showResult ? 'true' : 'false'}
-            </Text>
-            <Text style={{ color: 'white', fontSize: 10 }}>
-              Submitting: {isSubmitting ? 'true' : 'false'}
-            </Text>
-            <Text style={{ color: 'white', fontSize: 10 }}>
-              Completed: {currentQuestion?.isCompleted ? 'true' : 'false'}
-            </Text>
           </View>
         )}
-      </SafeAreaView>
+
+        {showResult && answerResult && answerResult.data && (
+          <>
+            <ScoreAnimation
+              score={answerResult.data.scoreEarned}
+              totalScore={answerResult.data.currentScore}
+              visible={showResult}
+              isCorrect={answerResult.data.isCorrect}
+            />
+          </>
+        )}
+
+        {(showResult || currentQuestion.isCompleted) && (
+          <Button
+            title={
+              currentQuestionIndex < currentQuestions.length - 1
+                ? currentQuestion.isCompleted
+                  ? 'Next →'
+                  : 'Next Question'
+                : currentQuestion.isCompleted
+                ? 'View Results'
+                : 'Complete Level'
+            }
+            onPress={handleNextQuestion}
+            variant="primary"
+            size="large"
+            fullWidth
+            style={styles.submitButton}
+          />
+        )}
+      </Animated.ScrollView>
+
+      <Modal
+        visible={showExitModal}
+        title="Exit Game"
+        message="Are you sure you want to exit? Your progress will be saved."
+        onClose={() => setShowExitModal(false)}
+        onConfirm={handleExit}
+        confirmText="Exit"
+        cancelText="Continue Playing"
+        type="warning"
+      />
     </GradientBackground>
   );
 };
 
 const styles = StyleSheet.create({
-  gameIndicator: {
+  completedQuestionSummary: {
+    marginTop: SPACING.lg,
+    gap: SPACING.sm,
+  },
+  /** correct answer reveal — always shown, prominent */
+  correctAnswerReveal: {
+    backgroundColor: 'rgba(45,122,79,0.07)',
+    borderRadius: RADIUS.xl,
+    borderWidth: 1.5,
+    borderColor: 'rgba(45,122,79,0.28)',
+    padding: SPACING.lg,
+  },
+  correctAnswerIconRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: SPACING.sm,
+    marginBottom: SPACING.sm,
+  },
+  correctAnswerIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: RADIUS.full,
+    backgroundColor: '#2D7A4F',
     justifyContent: 'center',
+    alignItems: 'center',
+  },
+  correctAnswerIconText: {
+    fontSize: 14,
+    fontWeight: FONTS.weights.bold,
+    color: COLORS.white,
+  },
+  correctAnswerHeading: {
+    fontSize: FONTS.sizes.sm,
+    fontWeight: FONTS.weights.bold,
+    color: '#2D7A4F',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+  correctAnswerText: {
+    fontSize: FONTS.sizes.xl,
+    fontWeight: FONTS.weights.bold,
+    color: COLORS.text,
+    lineHeight: 28,
+  },
+  /** user result badge — correct or wrong indicator */
+  userResultBadge: {
+    borderRadius: RADIUS.lg,
+    paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.lg,
-    marginHorizontal: SPACING.lg,
-    marginBottom: SPACING.md,
+    alignSelf: 'flex-start',
+  },
+  userResultCorrect: {
+    backgroundColor: 'rgba(45,122,79,0.1)',
+  },
+  userResultWrong: {
+    backgroundColor: 'rgba(197,48,48,0.08)',
+  },
+  userResultLabel: {
+    fontSize: FONTS.sizes.sm,
+    fontWeight: FONTS.weights.medium,
+    color: COLORS.textSecondary,
+  },
+
+  headerCoinBadge: {
     backgroundColor: COLORS.primary,
-    borderRadius: RADIUS.full,
-    opacity: 0.9,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 4,
+    borderRadius: RADIUS.md,
   },
-  gameIndicatorDot: {
-    width: 8,
-    height: 8,
-    borderRadius: RADIUS.full,
-    backgroundColor: COLORS.white,
-  },
-  gameIndicatorText: {
+  headerCoinText: {
     fontSize: FONTS.sizes.sm,
     fontWeight: FONTS.weights.bold,
     color: COLORS.white,
-    marginHorizontal: SPACING.sm,
-    letterSpacing: 1,
   },
   container: {
     flex: 1,
     backgroundColor: 'transparent',
   },
-  header: {
-    paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.md,
-    paddingBottom: SPACING.md,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
+
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     paddingHorizontal: SPACING.lg,
-    paddingBottom: 120, // Increased padding to ensure button is fully visible
-    flexGrow: 1, // Allow content to expand
+    paddingBottom: 140,
+    flexGrow: 1,
   },
   optionsContainer: {
     marginTop: SPACING.lg,

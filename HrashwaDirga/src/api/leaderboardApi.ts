@@ -13,10 +13,17 @@ import { ApiResponse } from '@/types/api.types';
  * @param limit Maximum number of entries to return (default: 100)
  * @returns Array of leaderboard entries with rankings
  */
-export const getLeaderboard = async (limit: number = 100): Promise<LeaderboardEntry[]> => {
-  const response = await axiosInstance.get<ApiResponse<{ leaderboard: LeaderboardEntry[] }>>(
-    `/leaderboard?limit=${limit}`
-  );
+export const getLeaderboard = async (
+  limit: number = 100,
+  country?: string,
+): Promise<LeaderboardEntry[]> => {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (country) params.append('country', country);
+
+  const response = await axiosInstance.get<
+    ApiResponse<{ leaderboard: LeaderboardEntry[] }>
+  >(`/leaderboard?${params.toString()}`);
+
   return response.data.data!.leaderboard;
 };
 

@@ -39,8 +39,12 @@ export const HintButton: React.FC<HintButtonProps> = ({
   hintsRemainingToday = 1, // Default to 1 if not the hints is not there
 }) => {
   const scale = useSharedValue(1);
+  /**
+   * fixed: was hintsRemainingToday > 1 which always returned false
+   * when default prop value is 1. changed to >= 1.
+   */
   const canAfford =
-    userCoins >= hintCost && !isOffline && hintsRemainingToday > 1;
+    userCoins >= hintCost && !isOffline && hintsRemainingToday >= 1;
   // will decide if the user can afford the hint or not
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -96,9 +100,11 @@ export const HintButton: React.FC<HintButtonProps> = ({
           >
             {isOffline
               ? 'Offline'
-              : hintsRemainingToday === 0
-              ? 'No hints today'
-              : `${hintCost} coins (${hintsRemainingToday} left)`}
+              : !canAfford && userCoins < hintCost
+              ? `Need ${hintCost} coins`
+              : hintsRemainingToday <= 0
+              ? 'No hints left today'
+              : `${hintCost} coins · ${hintsRemainingToday} left`}
           </Text>
         </View>
       </View>

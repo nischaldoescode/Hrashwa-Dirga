@@ -12,6 +12,14 @@ import notifee, {
 } from '@notifee/react-native';
 import { Platform } from 'react-native';
 import { NOTIFICATION_CHANNELS } from '@/utils/constants';
+import {
+  getMessaging,
+  requestPermission,
+  AuthorizationStatus,
+  onMessage,
+  setBackgroundMessageHandler,
+  getToken,
+} from '@react-native-firebase/messaging';
 
 /**
  * Notification Service class
@@ -36,10 +44,10 @@ class NotificationService {
   async requestPermissions(): Promise<boolean> {
     try {
       if (Platform.OS === 'ios') {
-        const authStatus = await messaging().requestPermission();
+        const authStatus = await requestPermission(getMessaging());
         const enabled =
-          authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-          authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+          authStatus === AuthorizationStatus.AUTHORIZED ||
+          authStatus === AuthorizationStatus.PROVISIONAL;
 
         return enabled;
       } else {
@@ -99,7 +107,7 @@ class NotificationService {
    * Handles foreground and background notifications
    */
   async setupMessageHandlers(): Promise<void> {
-    messaging().onMessage(async remoteMessage => {
+    onMessage(getMessaging(), async remoteMessage => {
       await this.displayNotification(
         remoteMessage.notification?.title || 'Notification',
         remoteMessage.notification?.body || '',
@@ -107,7 +115,7 @@ class NotificationService {
       );
     });
 
-    messaging().setBackgroundMessageHandler(async remoteMessage => {
+    setBackgroundMessageHandler(getMessaging(), async remoteMessage => {
       console.log('Background message received:', remoteMessage);
     });
   }
@@ -119,7 +127,7 @@ class NotificationService {
    */
   async getFCMToken(): Promise<string | null> {
     try {
-      const token = await messaging().getToken();
+      const token = await getToken(getMessaging());
       return token;
     } catch (error) {
       console.error('Get FCM token error:', error);

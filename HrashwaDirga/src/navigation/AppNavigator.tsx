@@ -14,6 +14,7 @@ import { MainNavigator } from './MainNavigator';
 import SplashScreen from 'react-native-splash-screen';
 import { adMobService } from '@/services/adMobService';
 import { useAppOpenAd } from '@/hooks/useAppOpenAd';
+import { UsernameScreen } from '@/screens/auth/UsernameScreen';
 
 export const AppNavigator: React.FC = () => {
   useAppOpenAd();
@@ -22,58 +23,57 @@ export const AppNavigator: React.FC = () => {
   const { loadEssentialData, syncOfflineData } = useCache();
   const [initializing, setInitializing] = React.useState(true);
 
-
   useEffect(() => {
     initializeApp();
   }, []);
 
   /**
    * Initialize app on startup
-   * Steps:
-   * 1. Initialize auth service and notifications
-   * 2. Restore previous session from cache
-   * 3. Load essential data if authenticated
-   * 4. Sync offline data if authenticated
-   * 5. Hide native splash screen
+   * phases in order:
+   *  Initialize auth service and notifications
+   * Restore previous session from cache
+   * Load essential data if authenticated
+   * Sync offline data if authenticated
+   * Hide native splash screen
    */
   const initializeApp = async () => {
-      try {
-        setLoading(true);
+    try {
+      setLoading(true);
 
-        console.log('[AppNavigator] Starting app initialization...');
+      console.log('[AppNavigator] Starting app initialization...');
 
-        // Initialize AdMob FIRST before anything else
-        console.log('[AppNavigator] Initializing AdMob...');
-        await adMobService.initialize();
-        
-        // Wait 1 second to ensure ads start loading
-        await new Promise(resolve => setTimeout(() => resolve(undefined), 1000));
-        
-        console.log('[AppNavigator] Initializing auth service...');
-        authService.initialize();
-        
-        console.log('[AppNavigator] Initializing notifications...');
-        await notificationService.initialize();
-        
-        // Restore session from cache
-        console.log('[AppNavigator] Restoring session...');
-        restoreSession();
+      // Initialize AdMob FIRST before anything else
+      console.log('[AppNavigator] Initializing AdMob...');
+      await adMobService.initialize();
 
-        // Load data for authenticated users
-        if (isAuthenticated) {
-          console.log('[AppNavigator] Loading user data...');
-          await loadEssentialData();
-          await syncOfflineData();
-        }
-        
-        console.log('[AppNavigator] ✅ App initialization complete');
-      } catch (error) {
-        console.error('[AppNavigator] ❌ App initialization error:', error);
-      } finally {
-        setLoading(false);
-        setInitializing(false);
+      // Wait 1 second to coz ads start loading
+      await new Promise(resolve => setTimeout(() => resolve(undefined), 1000));
+
+      console.log('Initializing auth service...');
+      authService.initialize();
+
+      console.log('Initializing notifications...');
+      await notificationService.initialize();
+
+      // Restore session from cache
+      console.log('Restoring session...');
+      restoreSession();
+
+      // Load data for authenticated users
+      if (isAuthenticated) {
+        console.log('Loading user data...');
+        await loadEssentialData();
+        await syncOfflineData();
       }
-    };
+
+      console.log('App initialization complete');
+    } catch (error) {
+      console.error('App initialization error:', error);
+    } finally {
+      setLoading(false);
+      setInitializing(false);
+    }
+  };
 
   // Hide splash screen after initialization completes
   useEffect(() => {
@@ -87,9 +87,35 @@ export const AppNavigator: React.FC = () => {
     }
   }, [initializing, isLoading]);
 
+  /**
+   * subscribe to username specifically so AppNavigator re-renders
+   * the moment setUser is called with a username value.
+   */
+  const user = useAuthStore(state => state.user);
+
+  /**
+   * needsUsername is true only when:
+   * - user is authenticated
+   * - user object exists
+   * - username field is null, undefined, or empty string
+   *
+   * this check re-evaluates every time user object changes,
+   * so setting username via setUser immediately unmounts UsernameScreen.
+   */
+  const needsUsername =
+    isAuthenticated &&
+    !!user &&
+    (!user.username || user.username.trim().length === 0);
+
   return (
     <NavigationContainer>
-      {isAuthenticated ? <MainNavigator /> : <AuthNavigator />}
+      {!isAuthenticated ? (
+        <AuthNavigator />
+      ) : needsUsername ? (
+        <UsernameScreen />
+      ) : (
+        <MainNavigator />
+      )}
     </NavigationContainer>
   );
 };

@@ -3,6 +3,7 @@
     <!-- App theme colors - Professional warm light theme -->
     <color name="statusbar_background">#F7F4F0</color>
     <color name="splash_background">#F7F4F0</color>
+    <color name="app_background">#F7F4F0</color> 
     
     <!-- Primary brand colors -->
     <color name="primary">#B8956A</color>

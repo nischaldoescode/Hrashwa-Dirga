@@ -69,20 +69,24 @@ export const ScoreAnimation: React.FC<ScoreAnimationProps> = ({
     <Animated.View style={[styles.container, animatedStyle]}>
       {isCorrect ? (
         <>
-          <Text style={styles.label}>Score Earned</Text>
+          <View style={styles.correctBadge}>
+            <Text style={styles.correctBadgeText}>Correct</Text>
+          </View>
           <View style={styles.scoreContainer}>
             <Text style={styles.plusSign}>+</Text>
             <AnimatedText style={styles.score}>
               {Math.round(scoreValue.value)}
             </AnimatedText>
+            <Text style={styles.scoreUnit}> pts</Text>
           </View>
-          <Text style={styles.totalScore}>Total Score: {totalScore}</Text>
+          <Text style={styles.totalScore}>Running total: {totalScore}</Text>
         </>
       ) : (
         <>
-          <Text style={styles.wrongEmoji}>😞</Text>
-          <Text style={styles.wrongLabel}>Wrong Answer</Text>
-          <Text style={styles.wrongMessage}>+0 points</Text>
+          <View style={styles.wrongBadge}>
+            <Text style={styles.wrongBadgeText}>Incorrect</Text>
+          </View>
+          <Text style={styles.wrongMessage}>No points this time</Text>
         </>
       )}
     </Animated.View>
@@ -94,46 +98,72 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: SPACING.lg,
   },
-  label: {
-    fontSize: FONTS.sizes.sm,
-    fontWeight: FONTS.weights.medium,
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.xs,
+  /** correct state */
+  correctBadge: {
+    backgroundColor: 'rgba(45,122,79,0.1)',
+    borderRadius: 20,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(45,122,79,0.25)',
+    marginBottom: SPACING.sm,
+  },
+  correctBadgeText: {
+    fontSize: FONTS.sizes.xs,
+    fontWeight: FONTS.weights.bold,
+    color: '#2D7A4F',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
   scoreContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
+    gap: 2,
   },
   plusSign: {
-    fontSize: FONTS.sizes.xxxl,
+    fontSize: FONTS.sizes.xxl,
     fontWeight: FONTS.weights.bold,
     color: COLORS.success,
-    marginRight: SPACING.xs,
+    lineHeight: 52,
   },
   score: {
     fontSize: FONTS.sizes.display,
     fontWeight: FONTS.weights.bold,
     color: COLORS.success,
   },
+  scoreUnit: {
+    fontSize: FONTS.sizes.lg,
+    fontWeight: FONTS.weights.semiBold,
+    color: COLORS.success,
+    lineHeight: 48,
+    opacity: 0.75,
+  },
   totalScore: {
-    fontSize: FONTS.sizes.md,
+    fontSize: FONTS.sizes.sm,
     fontWeight: FONTS.weights.medium,
     color: COLORS.textSecondary,
     marginTop: SPACING.sm,
   },
-  wrongEmoji: {
-    fontSize: 64,
-    marginBottom: SPACING.md,
+  /** wrong state */
+  wrongBadge: {
+    backgroundColor: 'rgba(197,48,48,0.08)',
+    borderRadius: 20,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(197,48,48,0.2)',
+    marginBottom: SPACING.sm,
   },
-  wrongLabel: {
-    fontSize: FONTS.sizes.xl,
+  wrongBadgeText: {
+    fontSize: FONTS.sizes.xs,
     fontWeight: FONTS.weights.bold,
     color: COLORS.error,
-    marginBottom: SPACING.xs,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
   wrongMessage: {
-    fontSize: FONTS.sizes.lg,
-    fontWeight: FONTS.weights.semiBold,
+    fontSize: FONTS.sizes.md,
+    fontWeight: FONTS.weights.medium,
     color: COLORS.textSecondary,
   },
 });

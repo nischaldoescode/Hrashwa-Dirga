@@ -1,15 +1,19 @@
 /**
- * Leaderboard Item Component
- * Displays individual leaderboard entry
+ * leaderboard item component.
+ * shows rank badge, flag + country code, username, score, and star.
+ * top 3 get medal colors. podium entries get a subtle accent border.
  */
 
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { COLORS, FONTS, SPACING, RADIUS } from '@/utils/constants';
 import { LeaderboardEntry } from '@/types/game.types';
-import { formatNumber, getOrdinal } from '@/utils/helpers';
+import { formatNumber } from '@/utils/helpers';
+import { getFlagEmoji } from '@/utils/countries';
+import { getSmallAvatarUrl } from '@/utils/avatar';
 
 interface LeaderboardItemProps {
   entry: LeaderboardEntry;
@@ -17,64 +21,58 @@ interface LeaderboardItemProps {
   isCurrentUser?: boolean;
 }
 
-/**
- * Leaderboard entry with rank, avatar, name, and score
- */
+const MEDAL_COLORS = {
+  1: { bg: '#C4A44A', text: '#FFFFFF', border: '#B8956A' },
+  2: { bg: '#9B9B9B', text: '#FFFFFF', border: '#888' },
+  3: { bg: '#A0785A', text: '#FFFFFF', border: '#8B6449' },
+};
+
 export const LeaderboardItem: React.FC<LeaderboardItemProps> = ({
   entry,
   index,
   isCurrentUser = false,
 }) => {
-  const getRankColor = () => {
-    switch (entry.rank) {
-      case 1:
-        return COLORS.warning;
-      case 2:
-        return '#C0C0C0';
-      case 3:
-        return '#CD7F32';
-      default:
-        return COLORS.textSecondary;
-    }
-  };
-
-  const getMedal = () => {
-    switch (entry.rank) {
-      case 1:
-        return '🥇';
-      case 2:
-        return '🥈';
-      case 3:
-        return '🥉';
-      default:
-        return null;
-    }
-  };
+  const medal = MEDAL_COLORS[entry.rank as keyof typeof MEDAL_COLORS];
+  const isTopThree = entry.rank <= 3;
+  const flag = entry.country ? getFlagEmoji(entry.country) : '';
 
   return (
     <Animated.View
-      entering={FadeIn.delay(index * 50).duration(300)}
-      style={[styles.container, isCurrentUser && styles.currentUser]}
+      entering={FadeInDown.delay(index * 45).duration(320)}
+      style={[
+        styles.container,
+        isCurrentUser && styles.currentUser,
+        isTopThree && !isCurrentUser && styles.topThree,
+      ]}
     >
-      <View style={styles.rankContainer}>
-        {getMedal() ? (
-          <Text style={styles.medal}>{getMedal()}</Text>
-        ) : (
-          <Text style={[styles.rank, { color: getRankColor() }]}>
-            {getOrdinal(entry.rank)}
-          </Text>
-        )}
+      {/** rank badge */}
+      <View
+        style={[
+          styles.rankBadge,
+          medal ? { backgroundColor: medal.bg } : styles.rankBadgeDefault,
+        ]}
+      >
+        <Text
+          style={[styles.rankText, { color: medal ? medal.text : COLORS.text }]}
+        >
+          {entry.rank}
+        </Text>
       </View>
 
+      {/** avatar */}
       <FastImage
         source={{
-          uri: entry.photoURL || 'https://via.placeholder.com/40',
+          uri: entry.displayName
+            ? getSmallAvatarUrl(entry.displayName)
+            : entry.photoURL || '',
           priority: FastImage.priority.normal,
           cache: FastImage.cacheControl.immutable,
         }}
         style={styles.avatar}
+        defaultSource={require('@/assets/images/avatar_placeholder.png')}
       />
 
+      {/** name + country row */}
       <View style={styles.infoContainer}>
         <Text
           style={[styles.name, isCurrentUser && styles.currentUserText]}
@@ -83,17 +81,42 @@ export const LeaderboardItem: React.FC<LeaderboardItemProps> = ({
           {entry.displayName}
           {isCurrentUser && ' (You)'}
         </Text>
-        <Text style={styles.email} numberOfLines={1}>
-          {entry.email}
-        </Text>
+        {/** flag + country code tag */}
+        {flag || entry.country ? (
+          <View style={styles.countryTag}>
+            {flag ? <Text style={styles.flagText}>{flag}</Text> : null}
+            {entry.country ? (
+              <Text
+                style={[
+                  styles.countryCode,
+                  isCurrentUser && styles.countryCodeCurrentUser,
+                ]}
+              >
+                {entry.country.toUpperCase()}
+              </Text>
+            ) : null}
+          </View>
+        ) : null}
       </View>
 
-      <View style={styles.scoreContainer}>
-        <Text style={[styles.score, isCurrentUser && styles.currentUserText]}>
-          {formatNumber(entry.totalScore)}
-        </Text>
-        <Text style={styles.scoreLabel}>points</Text>
-      </View>
+      {/** score */}
+      <Text style={[styles.score, isCurrentUser && styles.currentUserText]}>
+        {formatNumber(entry.totalScore)}
+      </Text>
+
+      {/** star */}
+      <MaterialCommunityIcons
+        name={isCurrentUser ? 'star' : 'star-outline'}
+        size={18}
+        color={
+          isCurrentUser
+            ? COLORS.white
+            : isTopThree
+            ? COLORS.primary
+            : COLORS.textTertiary
+        }
+        style={styles.star}
+      />
     </Animated.View>
   );
 };
@@ -102,76 +125,101 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.card,
-    borderRadius: RADIUS.lg,
-    padding: SPACING.lg,
-    marginBottom: SPACING.md,
-    overflow: 'hidden',
-    borderWidth: 2, // Thicker border
+    backgroundColor: COLORS.backgroundLight,
+    borderRadius: RADIUS.xl,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.md,
+    marginBottom: SPACING.sm,
+    borderWidth: 1.5,
     borderColor: COLORS.border,
     shadowColor: COLORS.primaryDark,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  topThree: {
+    borderColor: 'rgba(184,149,106,0.4)',
+    backgroundColor: 'rgba(247,244,240,1)',
     shadowOpacity: 0.1,
-    shadowRadius: 4,
     elevation: 3,
   },
   currentUser: {
-    backgroundColor: COLORS.primary, // Changed from primaryDark
+    backgroundColor: COLORS.primary,
     borderColor: COLORS.primaryDark,
-    borderWidth: 3,
+    borderWidth: 2,
+    shadowOpacity: 0.2,
+    elevation: 5,
   },
-  rankContainer: {
-    width: 50,
+  rankBadge: {
+    width: 34,
+    height: 34,
+    borderRadius: RADIUS.full,
+    justifyContent: 'center',
     alignItems: 'center',
+    marginRight: SPACING.sm,
+    flexShrink: 0,
   },
-  rank: {
-    fontSize: FONTS.sizes.md,
+  rankBadgeDefault: {
+    backgroundColor: '#E8DDD0',
+  },
+  rankText: {
+    fontSize: FONTS.sizes.sm,
     fontWeight: FONTS.weights.bold,
   },
-  medal: {
-    fontSize: FONTS.sizes.xl,
-  },
   avatar: {
-    width: 40,
-    height: 40,
+    width: 38,
+    height: 38,
     borderRadius: RADIUS.full,
-    marginRight: SPACING.md,
-    backgroundColor: COLORS.backgroundLight,
+    marginRight: SPACING.sm,
+    backgroundColor: '#C0B0A0',
+    flexShrink: 0,
+  },
+  avatarInitial: {
+    fontSize: FONTS.sizes.md,
+    fontWeight: FONTS.weights.bold,
+    color: COLORS.white,
   },
   infoContainer: {
     flex: 1,
-  },
-  scoreContainer: {
-    alignItems: 'flex-end',
+    justifyContent: 'center',
   },
   name: {
-    fontSize: FONTS.sizes.lg, // Larger font
-    fontWeight: FONTS.weights.bold, // Bolder
+    fontSize: FONTS.sizes.md,
+    fontWeight: FONTS.weights.semiBold,
     color: COLORS.text,
-    marginBottom: SPACING.xs,
-  },
-  email: {
-    fontSize: FONTS.sizes.md, // Larger font
-    color: COLORS.text, // Changed from textSecondary
-    fontWeight: FONTS.weights.medium, // Added weight
-    opacity: 0.8, // Add opacity instead
-  },
-  score: {
-    fontSize: FONTS.sizes.xl, // Larger font
-    fontWeight: FONTS.weights.bold,
-    color: COLORS.primary,
-  },
-  scoreLabel: {
-    fontSize: FONTS.sizes.sm, // Larger font
-    color: COLORS.text, // Changed from textSecondary
-    fontWeight: FONTS.weights.medium, // Added weight
-    marginTop: SPACING.xs,
-    opacity: 0.7,
+    marginBottom: 2,
   },
   currentUserText: {
     color: COLORS.white,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+  },
+  countryTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  flagText: {
+    fontSize: 13,
+    lineHeight: 16,
+  },
+  countryCode: {
+    fontSize: 10,
+    fontWeight: FONTS.weights.bold,
+    color: COLORS.textTertiary,
+    letterSpacing: 0.6,
+  },
+  countryCodeCurrentUser: {
+    color: 'rgba(255,255,255,0.8)',
+  },
+  score: {
+    fontSize: FONTS.sizes.md,
+    fontWeight: FONTS.weights.bold,
+    color: COLORS.text,
+    marginRight: SPACING.xs,
+    flexShrink: 0,
+  },
+  star: {
+    marginLeft: 2,
+    flexShrink: 0,
   },
 });

@@ -8,6 +8,9 @@ export interface User {
   email: string;
   displayName: string;
   photoURL: string | null;
+  username?: string | null;
+  country?: string | null;
+  hasSetUsername?: boolean;
   coins: number;
   currentLevel: number;
   totalScore: number;

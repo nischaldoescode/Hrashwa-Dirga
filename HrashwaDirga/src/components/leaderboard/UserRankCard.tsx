@@ -1,6 +1,7 @@
 /**
- * User Rank Card Component
- * Displays current user's rank in leaderboard
+ * user rank card component.
+ * shows current user rank, score, and completed levels in a highlighted card.
+ * matches the design with ribbon badge in top-right corner.
  */
 
 import React from 'react';
@@ -9,42 +10,69 @@ import FastImage from '@d11/react-native-fast-image';
 import { COLORS, FONTS, SPACING, RADIUS } from '@/utils/constants';
 import { User } from '@/types/auth.types';
 import { formatNumber, getOrdinal } from '@/utils/helpers';
+import { getLargeAvatarUrl } from '@/utils/avatar';
 
 interface UserRankCardProps {
   user: User;
 }
 
-/**
- * Current user's rank card with highlight
- */
 export const UserRankCard: React.FC<UserRankCardProps> = ({ user }) => {
   if (!user.rank) return null;
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Your Rank</Text>
+    <View style={styles.wrapper}>
       <View style={styles.card}>
-        <View style={styles.rankBadge}>
-          <Text style={styles.rankNumber}>{getOrdinal(user.rank)}</Text>
+        {/** ribbon badge top-right */}
+        <View style={styles.ribbonContainer}>
+          <View style={styles.ribbon}>
+            <Text style={styles.ribbonText}>#{user.rank}</Text>
+          </View>
+          {/** ribbon tail triangle */}
+          <View style={styles.ribbonTail} />
         </View>
 
-        <FastImage
-          source={{
-            uri: user.photoURL || 'https://via.placeholder.com/60',
-            priority: FastImage.priority.high,
-            cache: FastImage.cacheControl.immutable,
-          }}
-          style={styles.avatar}
-        />
+        <Text style={styles.yourRankLabel}>Your Rank</Text>
 
-        <View style={styles.infoContainer}>
-          <Text style={styles.name} numberOfLines={1}>
-            {user.displayName}
-          </Text>
-          <View style={styles.scoreContainer}>
-            <Text style={styles.score}>{formatNumber(user.totalScore)}</Text>
-            <Text style={styles.scoreLabel}>points</Text>
+        <View style={styles.row}>
+          {/** avatar with initial fallback */}
+          <View style={styles.avatarContainer}>
+            <FastImage
+              source={{
+                uri: user.username
+                  ? getLargeAvatarUrl(user.username)
+                  : user.photoURL ||
+                    getLargeAvatarUrl(user.displayName ?? 'user'),
+                priority: FastImage.priority.high,
+                cache: FastImage.cacheControl.immutable,
+              }}
+              style={styles.avatar}
+            />
           </View>
+
+          <View style={styles.infoContainer}>
+            {/** rank badge inline */}
+            <View style={styles.inlineBadge}>
+              <Text style={styles.inlineBadgeText}>#{user.rank}</Text>
+            </View>
+
+            <Text style={styles.name} numberOfLines={1}>
+              {user.displayName}
+            </Text>
+          </View>
+        </View>
+
+        {/** score and levels row */}
+        <View style={styles.statsRow}>
+          <Text style={styles.statText}>
+            Score:{' '}
+            <Text style={styles.statValue}>
+              {formatNumber(user.totalScore)} Pts
+            </Text>
+          </Text>
+          <Text style={styles.statText}>
+            Completed Levels:{' '}
+            <Text style={styles.statValue}>{user.completedLevels ?? 0}</Text>
+          </Text>
         </View>
       </View>
     </View>
@@ -52,84 +80,107 @@ export const UserRankCard: React.FC<UserRankCardProps> = ({ user }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
+  wrapper: {
     paddingHorizontal: SPACING.lg,
     marginBottom: SPACING.lg,
   },
-  title: {
-    fontSize: FONTS.sizes.lg,
+  card: {
+    backgroundColor: '#E8DDD0',
+    borderRadius: RADIUS.xl,
+    padding: SPACING.lg,
+    borderWidth: 1.5,
+    borderColor: '#C8B89A',
+    shadowColor: COLORS.primaryDark,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  yourRankLabel: {
+    fontSize: FONTS.sizes.md,
     fontWeight: FONTS.weights.bold,
     color: COLORS.text,
     marginBottom: SPACING.md,
   },
-  card: {
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.primary,
-    borderRadius: RADIUS.xl,
-    padding: SPACING.lg,
-    borderWidth: 3,
-    borderColor: COLORS.primaryDark,
-    shadowColor: COLORS.primaryDark,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    marginBottom: SPACING.md,
   },
-  rankBadge: {
-    width: 60,
-    height: 60,
-    borderRadius: RADIUS.full,
-    backgroundColor: COLORS.white,
-    justifyContent: 'center',
-    alignItems: 'center',
+  avatarContainer: {
     marginRight: SPACING.md,
-    borderWidth: 3,
-    borderColor: COLORS.primaryDark,
-  },
-  rankNumber: {
-    fontSize: FONTS.sizes.lg,
-    fontWeight: FONTS.weights.bold,
-    color: COLORS.primary,
   },
   avatar: {
     width: 60,
     height: 60,
     borderRadius: RADIUS.full,
-    marginRight: SPACING.md,
-    backgroundColor: COLORS.backgroundLight,
-    borderWidth: 3,
+    backgroundColor: '#4ABFBF',
+    borderWidth: 2,
     borderColor: COLORS.white,
   },
   infoContainer: {
     flex: 1,
   },
+  inlineBadge: {
+    backgroundColor: COLORS.primaryDark,
+    borderRadius: RADIUS.sm,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 2,
+    alignSelf: 'flex-start',
+    marginBottom: SPACING.xs,
+  },
+  inlineBadgeText: {
+    fontSize: FONTS.sizes.sm,
+    fontWeight: FONTS.weights.bold,
+    color: COLORS.white,
+  },
   name: {
     fontSize: FONTS.sizes.xl,
     fontWeight: FONTS.weights.bold,
-    color: COLORS.white,
-    marginBottom: SPACING.sm,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    color: COLORS.text,
   },
-  scoreContainer: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
+  statsRow: {
+    gap: 4,
   },
-  score: {
-    fontSize: FONTS.sizes.xxl,
+  statText: {
+    fontSize: FONTS.sizes.md,
+    color: COLORS.text,
+    fontWeight: FONTS.weights.medium,
+  },
+  statValue: {
+    fontWeight: FONTS.weights.bold,
+    color: COLORS.text,
+  },
+  /** ribbon corner badge */
+  ribbonContainer: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    alignItems: 'flex-end',
+  },
+  ribbon: {
+    backgroundColor: COLORS.primaryDark,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderBottomLeftRadius: RADIUS.md,
+    minWidth: 52,
+    alignItems: 'center',
+  },
+  ribbonText: {
+    fontSize: FONTS.sizes.lg,
     fontWeight: FONTS.weights.bold,
     color: COLORS.white,
-    marginRight: SPACING.xs,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
   },
-  scoreLabel: {
-    fontSize: FONTS.sizes.sm,
-    color: COLORS.white,
-    fontWeight: FONTS.weights.medium,
-    opacity: 0.9,
+  ribbonTail: {
+    width: 0,
+    height: 0,
+    borderStyle: 'solid',
+    borderLeftWidth: 52,
+    borderBottomWidth: 10,
+    borderLeftColor: COLORS.primaryDark,
+    borderBottomColor: 'transparent',
+    alignSelf: 'flex-end',
   },
 });

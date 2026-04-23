@@ -1,7 +1,7 @@
 /**
- * Dot Loader Component
- * Animated three-dot loading indicator
- * Professional pulse animation with configurable colors and timing
+ * dot loader component.
+ * three dots bounce upward in a staggered wave.
+ * each dot cycles through the app's warm color palette.
  */
 
 import React, { useEffect } from 'react';
@@ -15,55 +15,44 @@ import Animated, {
   withDelay,
   Easing,
 } from 'react-native-reanimated';
-import { COLORS, SPACING } from '@/utils/constants';
+import { COLORS } from '@/utils/constants';
 
 interface DotLoaderProps {
-  /**
-   * Color of the loading dots
-   * @default COLORS.primary
-   */
-  color?: string;
-  /**
-   * Size of each dot in pixels
-   * @default 10
-   */
   size?: number;
-  /**
-   * Spacing between dots in pixels
-   * @default 8
-   */
   spacing?: number;
+  color?: string; // optional prop to override default colors
 }
 
-/**
- * Individual animated dot component
- * Scales up and down with staggered timing for wave effect
- */
+/** three warm colors that complement the app palette */
+const DOT_COLORS = [COLORS.primary, COLORS.primaryDark, '#7B9E7B'];
+
 const AnimatedDot: React.FC<{
   delay: number;
   color: string;
   size: number;
 }> = ({ delay, color, size }) => {
-  const scale = useSharedValue(1);
-  const opacity = useSharedValue(0.4);
+  const translateY = useSharedValue(0);
+  const opacity = useSharedValue(0.5);
 
   useEffect(() => {
-    // Staggered animation for wave effect
-    scale.value = withDelay(
+    /** bounce upward then return — negative Y = up on screen */
+    translateY.value = withDelay(
       delay,
       withRepeat(
         withSequence(
-          withTiming(1.4, {
-            duration: 400,
-            easing: Easing.bezier(0.34, 1.56, 0.64, 1), // Bouncy easing
+          withTiming(-14, {
+            duration: 350,
+            easing: Easing.bezier(0.33, 1, 0.68, 1),
           }),
-          withTiming(1, {
-            duration: 400,
-            easing: Easing.bezier(0.34, 1.56, 0.64, 1),
+          withTiming(0, {
+            duration: 350,
+            easing: Easing.bezier(0.33, 0, 0.68, 0),
           }),
+          /** small pause at bottom before next bounce */
+          withTiming(0, { duration: 200 }),
         ),
-        -1, // Infinite repeat
-        false, // Don't reverse
+        -1,
+        false,
       ),
     );
 
@@ -71,8 +60,9 @@ const AnimatedDot: React.FC<{
       delay,
       withRepeat(
         withSequence(
-          withTiming(1, { duration: 400 }),
-          withTiming(0.4, { duration: 400 }),
+          withTiming(1, { duration: 350 }),
+          withTiming(0.5, { duration: 350 }),
+          withTiming(0.5, { duration: 200 }),
         ),
         -1,
         false,
@@ -81,14 +71,13 @@ const AnimatedDot: React.FC<{
   }, [delay]);
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
+    transform: [{ translateY: translateY.value }],
     opacity: opacity.value,
   }));
 
   return (
     <Animated.View
       style={[
-        styles.dot,
         {
           width: size,
           height: size,
@@ -101,26 +90,22 @@ const AnimatedDot: React.FC<{
   );
 };
 
-/**
- * Dot Loader Component
- * Three animated dots with wave effect for loading states
- * Used in splash screens and loading indicators
- * 
- * @example
- * ```tsx
- * <DotLoader color={COLORS.primary} size={12} spacing={10} />
- * ```
- */
 export const DotLoader: React.FC<DotLoaderProps> = ({
-  color = COLORS.primary,
-  size = 10,
-  spacing = 8,
+  size = 12,
+  spacing = 10,
+  color,
 }) => {
+  const colors = color ? [color, color, color] : DOT_COLORS;
   return (
     <View style={[styles.container, { gap: spacing }]}>
-      <AnimatedDot delay={0} color={color} size={size} />
-      <AnimatedDot delay={150} color={color} size={size} />
-      <AnimatedDot delay={300} color={color} size={size} />
+      {DOT_COLORS.map((color, index) => (
+        <AnimatedDot
+          key={index}
+          delay={index * 160}
+          color={color}
+          size={size}
+        />
+      ))}
     </View>
   );
 };
@@ -130,8 +115,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  dot: {
-    // Dynamic styles applied via props
+    /** extra vertical space so the upward bounce isn't clipped */
+    paddingTop: 20,
   },
 });

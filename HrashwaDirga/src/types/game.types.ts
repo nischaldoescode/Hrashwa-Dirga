@@ -48,7 +48,6 @@ export interface AnswerResponse {
     currentCoins: number;
   };
 }
-
 export interface LevelCompletionResponse {
   success: boolean;
   message: string;
@@ -56,6 +55,11 @@ export interface LevelCompletionResponse {
   currentCoins: number;
   currentLevel: number;
   totalScore: number;
+  /**
+   * true when the level was already completed in a previous session.
+   * backend returns this instead of re-awarding coins.
+   */
+  alreadyCompleted?: boolean;
 }
 
 export interface HintResponse {
@@ -72,11 +76,13 @@ export interface HintResponse {
 
 export interface LeaderboardEntry {
   _id: string;
+  /** contains username value — mapped from user.username in backend */
   displayName: string;
   photoURL: string | null;
   totalScore: number;
   email: string;
   rank: number;
+  country?: string | null;
 }
 
 export interface AppConfig {

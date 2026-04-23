@@ -34,25 +34,20 @@ export const showToast = (
     if (position === 'top') gravity = ToastAndroid.TOP;
     if (position === 'center') gravity = ToastAndroid.CENTER;
 
-    // Add emoji based on type
-    let emoji = '';
+
     switch (type) {
       case 'success':
-        emoji = '✅ ';
         break;
       case 'error':
-        emoji = '❌ ';
         break;
       case 'warning':
-        emoji = '⚠️ ';
         break;
       case 'info':
-        emoji = 'ℹ️ ';
         break;
     }
 
     ToastAndroid.showWithGravity(
-      emoji + message,
+       message,
       toastDuration,
       gravity
     );

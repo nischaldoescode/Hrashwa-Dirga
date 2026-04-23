@@ -1,10 +1,18 @@
 /**
- * Main Navigator
- * Bottom tab navigation for authenticated users
+ * main navigator.
+ * bottom floating tab bar with 3d perspective slide between tabs.
+ * active pill wraps icon only, indicator sits below label cleanly.
+ * home tab always resets to HomeScreen when tapped.
  */
 
 import React from 'react';
-import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import {
+  View,
+  TouchableOpacity,
+  Text,
+  StyleSheet,
+  Dimensions,
+} from 'react-native';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,150 +25,263 @@ import { ResultScreen } from '@/screens/game/ResultScreen';
 import { LeaderboardScreen } from '@/screens/leaderboard/LeaderboardScreen';
 import { ProfileScreen } from '@/screens/profile/ProfileScreen';
 import { COLORS, FONTS } from '@/utils/constants';
-import { useNavigation, useNavigationState } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
+import Animated, {
+  FadeIn,
+  FadeOut,
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  Extrapolation,
+  SharedValue,
+} from 'react-native-reanimated';
+import SystemNavigationBar from 'react-native-system-navigation-bar';
 
 const Stack = createNativeStackNavigator();
 const TopTab = createMaterialTopTabNavigator();
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-/**
- * Home stack navigator
- */
-const HomeStack = () => {
-  return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: false,
-        animation: 'slide_from_right',
-        animationDuration: 300,
-      }}
-    >
-      <Stack.Screen name="Home" component={HomeScreen} />
-      <Stack.Screen name="Levels" component={LevelsScreen} />
-      <Stack.Screen name="Game" component={GameScreen} />
-      <Stack.Screen name="Result" component={ResultScreen} />
-    </Stack.Navigator>
-  );
-};
+const HomeStack = () => (
+  <Stack.Navigator
+    screenOptions={{
+      headerShown: false,
+      animation: 'slide_from_right',
+      animationDuration: 300,
+    }}
+  >
+    <Stack.Screen name="Home" component={HomeScreen} />
+    <Stack.Screen name="Levels" component={LevelsScreen} />
+    <Stack.Screen name="Game" component={GameScreen} />
+    <Stack.Screen name="Result" component={ResultScreen} />
+  </Stack.Navigator>
+);
 
-/**
- * Custom Tab Bar Component
- */
-const CustomTabBar = ({ state, navigation }: any) => {
+const TABS = [
+  { name: 'HomeTab', label: 'Home', icon: 'home' },
+  { name: 'Leaderboard', label: 'Leaderboard', icon: 'trophy' },
+  { name: 'Profile', label: 'Profile', icon: 'account' },
+];
+
+const CustomTabBar = React.memo(({ state, navigation }: any) => {
   const insets = useSafeAreaInsets();
 
-  const tabs = [
-    { name: 'HomeTab', label: 'Home', icon: 'home' },
-    { name: 'Leaderboard', label: 'Leaderboard', icon: 'trophy' },
-    { name: 'Profile', label: 'Profile', icon: 'account' },
-  ];
+  const handleTabPress = (tabName: string) => {
+    if (tabName === 'HomeTab') {
+      navigation.reset({
+        index: 0,
+        routes: [
+          {
+            name: 'HomeTab',
+            state: { index: 0, routes: [{ name: 'Home' }] },
+          },
+        ],
+      });
+      return;
+    }
+    navigation.navigate(tabName);
+  };
 
   return (
     <View
       style={[
         styles.tabBarContainer,
-        {
-          height: 70 + insets.bottom,
-          paddingBottom: insets.bottom > 0 ? insets.bottom + 12 : 20,
-        },
+        { bottom: Math.max(insets.bottom, 10) + 4 },
       ]}
     >
-      <BlurView blurType="light" blurAmount={15} style={styles.blurView} />
-      {tabs.map((tab, index) => {
+      <BlurView
+        blurType="light"
+        blurAmount={20}
+        style={StyleSheet.absoluteFillObject}
+      />
+      {TABS.map((tab, index) => {
         const isActive = state.index === index;
         return (
           <TouchableOpacity
             key={tab.name}
             style={styles.tabButton}
-            onPress={() => navigation.navigate(tab.name)}
+            onPress={() => handleTabPress(tab.name)}
+            activeOpacity={0.75}
           >
-            <MaterialCommunityIcons
-              name={tab.icon}
-              size={24}
-              color={isActive ? COLORS.primary : COLORS.textTertiary}
-            />
+            <View style={styles.iconArea}>
+              {isActive && (
+                <Animated.View
+                  entering={FadeIn.duration(180)}
+                  exiting={FadeOut.duration(140)}
+                  style={styles.activePill}
+                />
+              )}
+              <MaterialCommunityIcons
+                name={tab.icon}
+                size={22}
+                color={isActive ? COLORS.primary : '#6B5D52'}
+              />
+            </View>
             <Text
               style={[
                 styles.tabLabel,
-                { color: isActive ? COLORS.primary : COLORS.textTertiary },
+                { color: isActive ? COLORS.primary : '#6B5D52' },
               ]}
             >
               {tab.label}
             </Text>
+            {isActive && (
+              <Animated.View
+                entering={FadeIn.duration(150)}
+                exiting={FadeOut.duration(120)}
+                style={styles.activeIndicator}
+              />
+            )}
           </TouchableOpacity>
         );
       })}
     </View>
   );
-};
+});
 
 /**
- * Main tab navigator with swipe gestures
+ * wraps each screen in a 3d perspective container.
+ * reads the tab position animated value from the navigation state
+ * and applies translateX + rotateY for a card-flip slide feel.
  */
+const Screen3DWrapper: React.FC<{
+  children: React.ReactNode;
+  index: number;
+  position: SharedValue<number>;
+}> = ({ children, index, position }) => {
+  const animatedStyle = useAnimatedStyle(() => {
+    const inputRange = [index - 1, index, index + 1];
+
+    const translateX = interpolate(
+      position.value,
+      inputRange,
+      [-SCREEN_WIDTH * 0.15, 0, SCREEN_WIDTH * 0.15],
+      Extrapolation.CLAMP,
+    );
+
+    const rotateYDeg = interpolate(
+      position.value,
+      inputRange,
+      [8, 0, -8],
+      Extrapolation.CLAMP,
+    );
+
+    const opacity = interpolate(
+      position.value,
+      inputRange,
+      [0.6, 1, 0.6],
+      Extrapolation.CLAMP,
+    );
+
+    const scale = interpolate(
+      position.value,
+      inputRange,
+      [0.92, 1, 0.92],
+      Extrapolation.CLAMP,
+    );
+
+    return {
+      transform: [
+        { perspective: 1000 },
+        { translateX },
+        { rotateY: `${rotateYDeg}deg` },
+        { scale },
+      ],
+      opacity,
+    };
+  });
+
+  return (
+    <Animated.View
+      style={[{ flex: 1, backgroundColor: '#F7F4F0' }, animatedStyle]}
+    >
+      {children}
+    </Animated.View>
+  );
+};
+
 export const MainNavigator: React.FC = () => {
   const navigation = useNavigation();
   const [swipeEnabled, setSwipeEnabled] = React.useState(true);
+  /**
+   * position tracks the fractional tab index during swipe gesture.
+   * 0 = HomeTab, 1 = Leaderboard, 2 = Profile.
+   * passed to Screen3DWrapper for the 3d transform.
+   */
+  const position = useSharedValue(0);
 
-  // Listen to navigation state to detect Game screen
+  React.useEffect(() => {
+    SystemNavigationBar.setNavigationColor('#EFE8E2', 'dark', 'navigation');
+    SystemNavigationBar.setNavigationBarDividerColor('#D6CFC8');
+    SystemNavigationBar.setNavigationBarContrastEnforced(false);
+  }, []);
+
   React.useEffect(() => {
     const unsubscribe = navigation.addListener('state', (e: any) => {
       try {
-        const state = e.data.state;
-        if (!state || !state.routes || typeof state.index !== 'number') {
-          return;
-        }
+        const navState = e.data.state;
+        if (!navState?.routes || typeof navState.index !== 'number') return;
+        /** update position for 3d effect on discrete tab press */
+        const { withTiming } = require('react-native-reanimated');
+        position.value = withTiming(navState.index, { duration: 320 });
 
-        const currentRoute = state.routes[state.index];
-        if (!currentRoute) {
-          return;
-        }
+        const currentRoute = navState.routes[navState.index];
+        if (!currentRoute) return;
 
-        // Check if we're on HomeTab stack
         if (currentRoute.name === 'HomeTab' && currentRoute.state) {
-          const homeStackState = currentRoute.state;
-
-          // Type guard: ensure index exists and is a number
+          const homeState = currentRoute.state;
           if (
-            homeStackState &&
-            typeof homeStackState.index === 'number' &&
-            homeStackState.routes &&
-            homeStackState.routes[homeStackState.index]
+            typeof homeState.index === 'number' &&
+            homeState.routes?.[homeState.index]
           ) {
-            const currentScreen =
-              homeStackState.routes[homeStackState.index].name;
-
-            // Disable swipe on Game and Result screens
-            setSwipeEnabled(
-              currentScreen !== 'Game' && currentScreen !== 'Result',
-            );
+            const screen = homeState.routes[homeState.index].name;
+            setSwipeEnabled(screen !== 'Game' && screen !== 'Result');
           } else {
             setSwipeEnabled(true);
           }
         } else {
           setSwipeEnabled(true);
         }
-      } catch (error) {
-        console.error('Navigation state listener error:', error);
+      } catch {
         setSwipeEnabled(true);
       }
     });
-
     return unsubscribe;
   }, [navigation]);
 
   return (
     <TopTab.Navigator
       screenOptions={{
-        swipeEnabled: swipeEnabled,
+        swipeEnabled,
         animationEnabled: true,
         lazy: true,
+        lazyPreloadDistance: 0,
+        sceneStyle: { backgroundColor: '#F7F4F0', flex: 1 },
       }}
       initialRouteName="HomeTab"
       tabBarPosition="bottom"
       tabBar={props => <CustomTabBar {...props} />}
     >
-      <TopTab.Screen name="HomeTab" component={HomeStack} />
-      <TopTab.Screen name="Leaderboard" component={LeaderboardScreen} />
-      <TopTab.Screen name="Profile" component={ProfileScreen} />
+      <TopTab.Screen name="HomeTab">
+        {() => (
+          <Screen3DWrapper index={0} position={position}>
+            <HomeStack />
+          </Screen3DWrapper>
+        )}
+      </TopTab.Screen>
+      <TopTab.Screen name="Leaderboard">
+        {() => (
+          <Screen3DWrapper index={1} position={position}>
+            <LeaderboardScreen />
+          </Screen3DWrapper>
+        )}
+      </TopTab.Screen>
+      <TopTab.Screen name="Profile">
+        {() => (
+          <Screen3DWrapper index={2} position={position}>
+            <ProfileScreen />
+          </Screen3DWrapper>
+        )}
+      </TopTab.Screen>
     </TopTab.Navigator>
   );
 };
@@ -168,36 +289,54 @@ export const MainNavigator: React.FC = () => {
 const styles = StyleSheet.create({
   tabBarContainer: {
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+    left: 16,
+    right: 16,
+    height: 62,
     flexDirection: 'row',
-    backgroundColor: COLORS.card,
-    borderTopColor: COLORS.border,
-    borderTopWidth: 1,
-    paddingTop: 12,
-    elevation: 8,
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-  },
-  blurView: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    bottom: 0,
-    right: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: 'rgba(255,255,255,0.88)',
+    borderRadius: 28,
+    borderWidth: 1.5,
+    borderColor: '#E5DDD5',
+    elevation: 14,
+    shadowColor: '#3E362E',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.14,
+    shadowRadius: 18,
+    overflow: 'hidden',
+    alignItems: 'center',
   },
   tabButton: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 8,
+  },
+  iconArea: {
+    width: 44,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2,
+  },
+  activePill: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(184, 149, 106, 0.15)',
+    borderRadius: 12,
   },
   tabLabel: {
-    fontSize: FONTS.sizes.xs,
-    fontWeight: FONTS.weights.medium,
-    marginTop: 4,
+    fontSize: 10,
+    fontWeight: '500',
+    lineHeight: 12,
+  },
+  activeIndicator: {
+    marginTop: 3,
+    width: 20,
+    height: 2.5,
+    backgroundColor: COLORS.primary,
+    borderRadius: 2,
   },
 });
