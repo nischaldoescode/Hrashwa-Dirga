@@ -251,7 +251,9 @@ const processLevelsWithProgress = (levels, user) => {
   return levels.map((level) => {
     const totalQuestions = level.questions.filter((q) => q.isActive).length;
     const completedQuestions = user.completedQuestions.filter((cq) =>
-      level.questions.some((q) => q._id.toString() === cq.questionId.toString())
+      level.questions.some(
+        (q) => q._id.toString() === cq.questionId.toString(),
+      ),
     ).length;
 
     const isCompleted = user.hasCompletedLevel(level._id);
@@ -434,18 +436,28 @@ const completeLevel = async (req, res) => {
     }
 
     if (user.hasCompletedLevel(levelId)) {
-      return res.status(400).json({
-        success: false,
+      /**
+       * return 200 instead of 400 when already completed.
+       * the app navigates to ResultScreen after this call —
+       * throwing 400 causes an error screen instead of the result.
+       */
+      return res.status(200).json({
+        success: true,
         message: "Level already completed",
+        alreadyCompleted: true,
+        bonusCoins: 0,
+        currentCoins: user.coins,
+        currentLevel: user.currentLevel,
+        totalScore: user.totalScore,
       });
     }
 
     const activeQuestions = level.questions.filter((q) => q.isActive);
 
-    // ✅ CRITICAL: Check that ALL questions are answered CORRECTLY
+    //Check that ALL questions are answered CORRECTLY
     const correctlyAnsweredQuestions = user.completedQuestions.filter((cq) => {
       const isInThisLevel = activeQuestions.some(
-        (q) => q._id.toString() === cq.questionId.toString()
+        (q) => q._id.toString() === cq.questionId.toString(),
       );
       return isInThisLevel && cq.isCorrect; // Must be correct!
     });
@@ -467,7 +479,7 @@ const completeLevel = async (req, res) => {
         $set: { currentLevel: level.levelNumber + 1 },
         $inc: { coins: 5 }, // award reward coins atomically (replacement for addRewardCoins)
       },
-      { new: true } // return the updated document
+      { new: true }, // return the updated document
     ).lean();
 
     // Invalidate all relevant caches
@@ -489,9 +501,9 @@ const completeLevel = async (req, res) => {
       success: true,
       message: "Level completed successfully",
       bonusCoins: 5,
-      currentCoins: user.coins,
-      currentLevel: user.currentLevel,
-      totalScore: user.totalScore,
+      currentCoins: updatedUser.coins,
+      currentLevel: updatedUser.currentLevel,
+      totalScore: updatedUser.totalScore,
     });
   } catch (error) {
     console.error("Complete level error:", error);

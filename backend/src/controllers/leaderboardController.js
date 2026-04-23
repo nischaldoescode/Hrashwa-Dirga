@@ -8,6 +8,10 @@ const {
   cacheLeaderboard,
   getCachedLeaderboard,
   invalidateLeaderboardCache,
+  CACHE_PREFIXES,
+  CACHE_TTL,
+  getCache,
+  setCache,
 } = require("../config/redis");
 
 /**
@@ -35,11 +39,12 @@ const getLeaderboard = async (req, res) => {
     }
 
     // Cache miss - fetch from database
-    const leaderboard = await User.getLeaderboard(limit);
+    const country = req.query.country || null;
+    const leaderboard = await User.getLeaderboard(limit, country);
 
     // Cache the full result (or a reasonable max like 500)
     const cacheLimit = Math.min(limit, 500);
-    const dataToCache = await User.getLeaderboard(cacheLimit);
+    const dataToCache = await User.getLeaderboard(cacheLimit, country);
     await cacheLeaderboard(dataToCache);
 
     return res.status(200).json({

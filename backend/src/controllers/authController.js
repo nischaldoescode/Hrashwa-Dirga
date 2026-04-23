@@ -112,6 +112,10 @@ const googleSignIn = async (req, res) => {
         email: user.email,
         displayName: user.displayName,
         photoURL: user.photoURL,
+        /** include username/country so AppNavigator gate works immediately
+         * on first login without needing a separate profile fetch */
+        username: user.username || null,
+        country: user.country || null,
         coins: user.coins,
         currentLevel: user.currentLevel,
         totalScore: user.totalScore,
@@ -153,6 +157,10 @@ const getProfile = async (req, res) => {
           email: user.email,
           displayName: user.displayName,
           photoURL: user.photoURL,
+          /** username and country must be included so AppNavigator
+           * correctly determines if UsernameScreen should be shown */
+          username: user.username || null,
+          country: user.country || null,
           coins: user.coins,
           currentLevel: user.currentLevel,
           totalScore: user.totalScore,
@@ -194,13 +202,22 @@ const getProfile = async (req, res) => {
  */
 const logout = async (req, res) => {
   try {
-    // Clear auth cookie
     clearAuthCookie(res);
-
-    // Also invalidate user cache if authenticated
     if (req.user) {
-      const { invalidateUserCache } = require("../config/redis");
-      await invalidateUserCache(req.user._id.toString()).catch((err) => {
+      const {
+        invalidateUserCache,
+        invalidateLevelsCache,
+        invalidateQuestionsCache,
+      } = require("../config/redis");
+      await Promise.all([
+        invalidateUserCache(req.user._id.toString()),
+        /**
+         * invalidate levels and questions cache on logout.
+         * prevents stale completed-question state from showing
+         * when a different user logs in on the same device/session.
+         */
+        invalidateLevelsCache(),
+      ]).catch((err) => {
         console.error("Cache invalidation error during logout:", err);
       });
     }
@@ -384,7 +401,7 @@ const claimDailyCoins = async (req, res) => {
     if (!userCacheInvalidated || !claimCacheInvalidated) {
       console.warn(
         `Cache invalidation partially failed for user ${userId}. ` +
-          `Data is correct in database but cache may be stale.`
+          `Data is correct in database but cache may be stale.`,
       );
     }
 
@@ -466,6 +483,414 @@ const checkAuth = async (req, res) => {
   }
 };
 getProfile;
+
+/**
+ * check if a username is available
+ * @route GET /api/auth/check-username/:username
+ */
+const checkUsername = async (req, res) => {
+  try {
+    const { username } = req.params;
+
+    if (
+      !username ||
+      username.length > 10 ||
+      !/^[a-zA-Z0-9-]+$/.test(username)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Invalid username. Max 10 chars, letters, numbers, and hyphens only.",
+      });
+    }
+
+    const existing = await User.findOne({ username: username.toLowerCase() });
+
+    return res.status(200).json({
+      success: true,
+      available: !existing,
+    });
+  } catch (error) {
+    console.error("Check username error:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+/**
+ * suggest available usernames based on display name
+ * @route GET /api/auth/suggest-usernames
+ */
+const suggestUsernames = async (req, res) => {
+  try {
+    const user = req.user;
+
+    /**
+     * extract clean base from display name.
+      "John D." → "john"
+     */
+    const base = user.displayName
+      .split(" ")[0]
+      .replace(/[^a-zA-Z0-9]/g, "")
+      .substring(0, 7)
+      .toLowerCase();
+
+    /**
+     * large pool of natural adjectives
+     * short, human-like, mix of calm, modern, aesthetic, energetic
+     */
+    const adjectives = [
+      "swift",
+      "brave",
+      "calm",
+      "bold",
+      "keen",
+      "wise",
+      "sharp",
+      "cool",
+      "epic",
+      "ace",
+      "silent",
+      "gentle",
+      "fierce",
+      "rapid",
+      "steady",
+      "bright",
+      "dark",
+      "soft",
+      "wild",
+      "pure",
+      "vivid",
+      "loyal",
+      "proud",
+      "quick",
+      "fresh",
+      "smooth",
+      "neat",
+      "prime",
+      "solid",
+      "clean",
+      "chill",
+      "kind",
+      "smart",
+      "slick",
+      "urban",
+      "rural",
+      "cosmic",
+      "solar",
+      "lunar",
+      "stellar",
+      "neon",
+      "crisp",
+      "frost",
+      "ember",
+      "nova",
+      "aero",
+      "terra",
+      "aqua",
+      "zen",
+      "flux",
+      "drift",
+      "glide",
+      "surge",
+      "pulse",
+      "echo",
+      "nova",
+      "rift",
+      "shade",
+      "flare",
+      "spark",
+      "calyx",
+      "velvet",
+      "amber",
+      "ivory",
+      "onyx",
+      "sable",
+      "pearl",
+      "copper",
+      "silver",
+      "golden",
+      "mint",
+      "sage",
+      "olive",
+      "cobalt",
+      "indigo",
+      "scarlet",
+      "crimson",
+      "azure",
+      "violet",
+      "blush",
+      "elegant",
+      "modest",
+      "subtle",
+      "simple",
+      "refined",
+      "polished",
+      "raw",
+      "edgy",
+      "sleek",
+      "minimal",
+      "playful",
+      "curious",
+      "restless",
+      "fearless",
+      "limitless",
+      "endless",
+      "timeless",
+      "agile",
+      "nimble",
+      "brisk",
+      "serene",
+      "tranquil",
+      "noisy",
+      "electric",
+      "magnetic",
+      "dynamic",
+      "radiant",
+      "glowing",
+      "burning",
+      "frozen",
+      "floating",
+      "falling",
+      "rising",
+      "wandering",
+      "seeking",
+      "hidden",
+      "open",
+      "awake",
+      "aware",
+      "alive",
+    ];
+
+    /**
+     * large pool of natural nouns
+     * mix of animals, abstract, tech, nature, identity-like words
+     */
+    const nouns = [
+      "fox",
+      "owl",
+      "wolf",
+      "hawk",
+      "bear",
+      "lion",
+      "star",
+      "ace",
+      "gem",
+      "core",
+      "node",
+      "byte",
+      "pixel",
+      "vector",
+      "signal",
+      "shadow",
+      "light",
+      "wave",
+      "pulse",
+      "spark",
+      "drift",
+      "orbit",
+      "comet",
+      "nova",
+      "planet",
+      "void",
+      "echo",
+      "rift",
+      "storm",
+      "breeze",
+      "leaf",
+      "tree",
+      "forest",
+      "river",
+      "stone",
+      "rock",
+      "cliff",
+      "valley",
+      "desert",
+      "ocean",
+      "flame",
+      "ember",
+      "ash",
+      "frost",
+      "ice",
+      "snow",
+      "rain",
+      "thunder",
+      "cloud",
+      "sky",
+      "sun",
+      "moon",
+      "dawn",
+      "dusk",
+      "night",
+      "day",
+      "horizon",
+      "zenith",
+      "peak",
+      "trail",
+      "path",
+      "route",
+      "line",
+      "grid",
+      "code",
+      "logic",
+      "data",
+      "cipher",
+      "key",
+      "lock",
+      "vault",
+      "frame",
+      "shape",
+      "form",
+      "figure",
+      "mask",
+      "face",
+      "voice",
+      "tone",
+      "note",
+      "beat",
+      "rhythm",
+      "flow",
+      "current",
+      "engine",
+      "drive",
+      "gear",
+      "core",
+      "unit",
+      "system",
+      "atlas",
+      "myth",
+      "legend",
+      "ghost",
+      "spirit",
+      "soul",
+      "mind",
+      "thought",
+      "vision",
+      "dream",
+      "mirror",
+      "lens",
+      "focus",
+      "point",
+      "edge",
+      "field",
+      "zone",
+      "space",
+      "realm",
+      "world",
+      "circle",
+      "arc",
+      "loop",
+      "chain",
+      "link",
+      "bridge",
+      "tower",
+      "gate",
+      "portal",
+      "axis",
+      "seed",
+      "root",
+      "branch",
+      "bloom",
+      "petal",
+      "thorn",
+      "vine",
+      "grain",
+      "dust",
+      "stone",
+    ];
+
+    /** pick deterministic options based on name char codes */
+    const seed = base.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+    const adj = adjectives[seed % adjectives.length];
+    const noun = nouns[(seed + 3) % nouns.length];
+    const adj2 = adjectives[(seed + 5) % adjectives.length];
+
+    const candidates = [
+      base,
+      `${base}-${noun}`.substring(0, 10),
+      `${adj}-${base}`.substring(0, 10),
+      `${base}${seed % 99}`.substring(0, 10),
+      `${adj2}${noun}`.substring(0, 10),
+      `${base}-${seed % 9}`.substring(0, 10),
+    ].filter((s) => s.length >= 3);
+
+    /** check availability for all candidates in parallel */
+    const results = await Promise.all(
+      candidates.map(async (name) => {
+        const taken = await User.findOne({ username: name.toLowerCase() });
+        return taken ? null : name.toLowerCase();
+      }),
+    );
+
+    const suggestions = results.filter(Boolean).slice(0, 5);
+
+    return res.status(200).json({ success: true, suggestions });
+  } catch (error) {
+    console.error("Suggest usernames error:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+/**
+ * set username and country for user
+ * @route POST /api/auth/set-username
+ */
+const setUsername = async (req, res) => {
+  try {
+    const { username, country } = req.body;
+    const user = req.user;
+
+    if (
+      !username ||
+      username.length > 10 ||
+      !/^[a-zA-Z0-9-]+$/.test(username)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid username format.",
+      });
+    }
+
+    if (!country || country.length !== 2) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid country code required.",
+      });
+    }
+
+    const existing = await User.findOne({
+      username: username.toLowerCase(),
+      _id: { $ne: user._id },
+    });
+
+    if (existing) {
+      return res.status(409).json({
+        success: false,
+        message: "Username already taken.",
+      });
+    }
+
+    user.username = username.toLowerCase();
+    user.country = country.toUpperCase();
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Username set successfully.",
+      user: {
+        username: user.username,
+        country: user.country,
+      },
+    });
+  } catch (error) {
+    if (error.code === 11000) {
+      return res
+        .status(409)
+        .json({ success: false, message: "Username already taken." });
+    }
+    console.error("Set username error:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
 module.exports = {
   googleSignIn,
   getProfile,
@@ -474,4 +899,7 @@ module.exports = {
   checkAuth,
   getDailyClaimStatus,
   claimDailyCoins,
+  checkUsername,
+  suggestUsernames,
+  setUsername,
 };

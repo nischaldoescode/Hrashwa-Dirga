@@ -4,9 +4,9 @@
  * Cloudinary is MANDATORY for this application
  */
 
-const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const multer = require('multer');
+const cloudinary = require("cloudinary").v2;
+const CloudinaryStorage = require("multer-storage-cloudinary");
+const multer = require("multer");
 
 /**
  * Configure Cloudinary with credentials from environment variables
@@ -21,10 +21,10 @@ const configureCloudinary = () => {
       secure: true, // Use HTTPS URLs
     });
 
-    console.log('Cloudinary configured successfully');
+    console.log("Cloudinary configured successfully");
   } catch (error) {
-    console.error('Cloudinary configuration error:', error.message);
-    throw new Error('Failed to configure Cloudinary. Check your credentials.');
+    console.error("Cloudinary configuration error:", error.message);
+    throw new Error("Failed to configure Cloudinary. Check your credentials.");
   }
 };
 
@@ -33,13 +33,11 @@ const configureCloudinary = () => {
  * Automatically uploads files to Cloudinary when received
  * Organizes uploads in specific folders for better management
  */
-const storage = new CloudinaryStorage({
+const storage = CloudinaryStorage({
   cloudinary: cloudinary,
-  params: {
-    folder: 'hrashwa-dirga', // Main folder for all app uploads
-    allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'], // Accepted image formats
-    transformation: [{ width: 512, height: 512, crop: 'limit' }], // Resize large images for optimization
-  },
+  folder: "hrashwa-dirga",
+  allowedFormats: ["jpg", "jpeg", "png", "gif", "svg", "webp"],
+  transformation: [{ width: 512, height: 512, crop: "limit" }],
 });
 
 /**
@@ -54,12 +52,18 @@ const upload = multer({
   },
   fileFilter: (req, file, cb) => {
     // Validate file mimetype
-    const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/svg+xml', 'image/webp'];
-    
+    const allowedMimes = [
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "image/svg+xml",
+      "image/webp",
+    ];
+
     if (allowedMimes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type. Only images are allowed.'), false);
+      cb(new Error("Invalid file type. Only images are allowed."), false);
     }
   },
 });
@@ -71,12 +75,12 @@ const upload = multer({
  * @param {string} folder - Cloudinary folder name (default: 'hrashwa-dirga/logos')
  * @returns {Promise<Object>} Upload result with secure_url and public_id
  */
-const uploadImage = async (filePath, folder = 'hrashwa-dirga/logos') => {
+const uploadImage = async (filePath, folder = "hrashwa-dirga/logos") => {
   try {
     const result = await cloudinary.uploader.upload(filePath, {
       folder: folder,
-      resource_type: 'image',
-      transformation: [{ width: 512, height: 512, crop: 'limit' }],
+      resource_type: "image",
+      transformation: [{ width: 512, height: 512, crop: "limit" }],
     });
 
     return {
@@ -84,8 +88,8 @@ const uploadImage = async (filePath, folder = 'hrashwa-dirga/logos') => {
       publicId: result.public_id,
     };
   } catch (error) {
-    console.error('Cloudinary upload error:', error.message);
-    throw new Error('Failed to upload image to Cloudinary');
+    console.error("Cloudinary upload error:", error.message);
+    throw new Error("Failed to upload image to Cloudinary");
   }
 };
 
@@ -100,8 +104,8 @@ const deleteImage = async (publicId) => {
     const result = await cloudinary.uploader.destroy(publicId);
     return result;
   } catch (error) {
-    console.error('Cloudinary delete error:', error.message);
-    throw new Error('Failed to delete image from Cloudinary');
+    console.error("Cloudinary delete error:", error.message);
+    throw new Error("Failed to delete image from Cloudinary");
   }
 };
 
@@ -114,8 +118,8 @@ const deleteImage = async (publicId) => {
  */
 const getOptimizedUrl = (publicId, transformations = {}) => {
   return cloudinary.url(publicId, {
-    fetch_format: 'auto', // Automatic format selection (WebP for supported browsers)
-    quality: 'auto', // Automatic quality optimization
+    fetch_format: "auto", // Automatic format selection (WebP for supported browsers)
+    quality: "auto", // Automatic quality optimization
     ...transformations,
   });
 };

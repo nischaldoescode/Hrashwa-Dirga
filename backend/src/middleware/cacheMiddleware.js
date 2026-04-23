@@ -19,8 +19,9 @@ const cacheMiddleware = (ttl = CACHE_TTL.MEDIUM) => {
       return next();
     }
 
+    const userId = req.user?._id?.toString() || 'anonymous';
     // Generate cache key from request URL and query parameters
-    const cacheKey = `request:${req.originalUrl}`;
+    const cacheKey = `request:${req.originalUrl}:${userId}`;
 
     try {
       // Attempt to retrieve from cache

@@ -35,10 +35,32 @@ const userSchema = new mongoose.Schema(
       trim: true,
     },
 
-    // User's profile photo URL from Google account
     photoURL: {
       type: String,
       default: null,
+    },
+
+    /**
+     * unique username chosen by user after first login.
+     * max 10 characters, only letters, numbers, and hyphens.
+     * used in leaderboard instead of displayName for privacy.
+     */
+    username: {
+      type: String,
+      default: null,
+      maxlength: 10,
+      match: /^[a-zA-Z0-9-]+$/,
+    },
+
+    /**
+     * ISO 3166-1 alpha-2 country code (e.g. "US", "IN", "NP").
+     * set during username selection screen.
+     */
+    country: {
+      type: String,
+      default: null,
+      maxlength: 2,
+      uppercase: true,
     },
 
     // Total coins available for purchasing hints
@@ -153,7 +175,7 @@ const userSchema = new mongoose.Schema(
   },
   {
     timestamps: true, // Automatically manages createdAt and updatedAt fields
-  }
+  },
 );
 
 /**
@@ -361,7 +383,7 @@ userSchema.methods.checkDailyClaimStatus = function () {
   lastClaim.setHours(0, 0, 0, 0);
 
   const daysSinceLastClaim = Math.floor(
-    (now - lastClaim) / (1000 * 60 * 60 * 24)
+    (now - lastClaim) / (1000 * 60 * 60 * 24),
   );
 
   // Already claimed today
@@ -465,8 +487,8 @@ userSchema.methods.claimDailyCoins = async function () {
     message: claimStatus.isFirstClaim
       ? "Welcome! Day 1 bonus claimed!"
       : claimStatus.streakBroken
-      ? "Streak reset. Keep playing daily!"
-      : `Day ${this.dailyCoinClaim.currentStreak} claimed! Keep the streak going!`,
+        ? "Streak reset. Keep playing daily!"
+        : `Day ${this.dailyCoinClaim.currentStreak} claimed! Keep the streak going!`,
   };
 };
 
@@ -519,7 +541,7 @@ userSchema.methods.updateScore = async function (hintsUsed = 0) {
  */
 userSchema.methods.hasCompletedQuestion = function (questionId) {
   return this.completedQuestions.find(
-    (cq) => cq.questionId.toString() === questionId.toString()
+    (cq) => cq.questionId.toString() === questionId.toString(),
   );
 };
 
@@ -530,26 +552,36 @@ userSchema.methods.hasCompletedQuestion = function (questionId) {
  */
 userSchema.methods.hasCompletedLevel = function (levelId) {
   return this.completedLevels.some(
-    (id) => id.toString() === levelId.toString()
+    (id) => id.toString() === levelId.toString(),
   );
 };
 
 /**
- * Static method to get top users for leaderboard
- * Returns users sorted by totalScore in descending order
- * @param {number} limit - Number of top users to return (default: 100)
- * @returns {Promise<Array>} Array of user objects with rank
+ * get global leaderboard.
+ * returns username (not displayName) for privacy.
+ * email is excluded from leaderboard response.
+ * @param {number} limit
+ * @param {string} [country] optional ISO country code to filter by
  */
-userSchema.statics.getLeaderboard = async function (limit = 100) {
-  const users = await this.find({ isActive: true })
-    .select("displayName photoURL totalScore email")
+userSchema.statics.getLeaderboard = async function (
+  limit = 100,
+  country = null,
+) {
+  const query = { isActive: true, username: { $ne: null } };
+  if (country) query.country = country.toUpperCase();
+
+  const users = await this.find(query)
+    .select("username photoURL totalScore country")
     .sort({ totalScore: -1, createdAt: 1 })
     .limit(limit)
     .lean();
 
-  // Add rank to each user (1-based)
   return users.map((user, index) => ({
-    ...user,
+    _id: user._id,
+    displayName: user.username,
+    photoURL: user.photoURL,
+    totalScore: user.totalScore,
+    country: user.country,
     rank: index + 1,
   }));
 };
@@ -572,4 +604,6 @@ userSchema.statics.getUserRank = async function (userId) {
   return higherScoreCount + 1; // Rank is count + 1
 };
 
+/** sparse unique index — only enforces uniqueness where username is set */
+userSchema.index({ username: 1 }, { unique: true, sparse: true });
 module.exports = mongoose.model("User", userSchema);

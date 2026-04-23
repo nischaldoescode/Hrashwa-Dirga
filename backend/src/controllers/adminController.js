@@ -214,11 +214,11 @@ const getAllUsers = async (req, res) => {
       ];
     }
 
-    // Execute query with pagination
+    // added username and country to select fields
     const [users, totalCount] = await Promise.all([
       User.find(query)
         .select(
-          "displayName email photoURL coins currentLevel totalScore isActive createdAt"
+          "displayName username country email photoURL coins currentLevel totalScore isActive createdAt",
         )
         .sort({ createdAt: -1 })
         .skip(skip)
@@ -281,7 +281,7 @@ const toggleUserStatus = async (req, res) => {
     console.log(
       `User ${user.email} status changed to: ${
         user.isActive ? "Active" : "Inactive"
-      }`
+      }`,
     );
 
     return res.status(200).json({
