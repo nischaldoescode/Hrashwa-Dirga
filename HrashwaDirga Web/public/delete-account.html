@@ -1,0 +1,937 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Delete Account — Hrashwa Dirga</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        --cream: #f7f4f0;
+        --cream-dark: #ede8e1;
+        --warm-brown: #b8956a;
+        --dark-brown: #8b6f47;
+        --deep: #3e362e;
+        --sage: #7b9e7b;
+        --teal: #4a8a8a;
+        --text: #3e362e;
+        --text-muted: #6b5d52;
+        --text-faint: #9b8b7e;
+        --border: rgba(184, 149, 106, 0.2);
+        --danger: #c0392b;
+        --danger-light: rgba(192, 57, 43, 0.08);
+        --danger-border: rgba(192, 57, 43, 0.2);
+      }
+      html {
+        scroll-behavior: smooth;
+        font-size: 16px;
+      }
+      body {
+        background: var(--cream);
+        color: var(--text);
+        font-family: "DM Sans", sans-serif;
+        font-weight: 300;
+        line-height: 1.7;
+        overflow-x: hidden;
+      }
+      ::selection {
+        background: rgba(184, 149, 106, 0.3);
+        color: var(--deep);
+      }
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+        background-size: 200px;
+        pointer-events: none;
+        z-index: 1000;
+        opacity: 0.6;
+      }
+      .cursor {
+        width: 8px;
+        height: 8px;
+        background: var(--warm-brown);
+        border-radius: 50%;
+        position: fixed;
+        pointer-events: none;
+        z-index: 9999;
+        transition: transform 0.15s ease, opacity 0.3s;
+        transform: translate(-50%, -50%);
+      }
+      .cursor-ring {
+        width: 36px;
+        height: 36px;
+        border: 1px solid var(--warm-brown);
+        border-radius: 50%;
+        position: fixed;
+        pointer-events: none;
+        z-index: 9998;
+        transform: translate(-50%, -50%);
+        transition: transform 0.35s cubic-bezier(0.23, 1, 0.32, 1), width 0.3s, height 0.3s, border-color 0.3s;
+        opacity: 0.6;
+      }
+      nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        padding: 1.25rem 3rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: rgba(247, 244, 240, 0.92);
+        backdrop-filter: blur(20px);
+        border-bottom: 1px solid var(--border);
+        transition: all 0.5s ease;
+      }
+      .nav-logo {
+        font-family: "Playfair Display", serif;
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--deep);
+        letter-spacing: 0.02em;
+        text-decoration: none;
+      }
+      .nav-logo span {
+        color: var(--warm-brown);
+      }
+      .nav-links {
+        display: flex;
+        gap: 2.5rem;
+        list-style: none;
+        align-items: center;
+      }
+      .nav-links a {
+        font-size: 0.85rem;
+        font-weight: 400;
+        color: var(--text-muted);
+        text-decoration: none;
+        letter-spacing: 0.04em;
+        transition: color 0.2s;
+        position: relative;
+      }
+      .nav-links a::after {
+        content: "";
+        position: absolute;
+        bottom: -3px;
+        left: 0;
+        right: 100%;
+        height: 1px;
+        background: var(--warm-brown);
+        transition: right 0.3s ease;
+      }
+      .nav-links a:hover {
+        color: var(--deep);
+      }
+      .nav-links a:hover::after {
+        right: 0;
+      }
+      .nav-cta {
+        background: var(--deep);
+        color: var(--cream) !important;
+        padding: 0.55rem 1.4rem;
+        border-radius: 2rem;
+        font-size: 0.82rem !important;
+        font-weight: 500 !important;
+        transition: background 0.25s, transform 0.2s !important;
+      }
+      .nav-cta::after {
+        display: none !important;
+      }
+      .nav-cta:hover {
+        background: var(--warm-brown) !important;
+        transform: translateY(-1px) !important;
+      }
+      .page-hero {
+        padding: 9rem 3rem 5rem;
+        max-width: 700px;
+        margin: 0 auto;
+        position: relative;
+      }
+      .page-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.72rem;
+        font-weight: 500;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--danger);
+        background: var(--danger-light);
+        padding: 0.4rem 1rem;
+        border-radius: 2rem;
+        border: 1px solid var(--danger-border);
+        margin-bottom: 1.75rem;
+        opacity: 0;
+        animation: fadeUp 0.7s 0.2s forwards;
+      }
+      .page-label::before {
+        content: "";
+        width: 5px;
+        height: 5px;
+        background: var(--danger);
+        border-radius: 50%;
+      }
+      .page-hero h1 {
+        font-family: "Playfair Display", serif;
+        font-size: clamp(2.4rem, 4vw, 3.5rem);
+        font-weight: 900;
+        line-height: 1.08;
+        color: var(--deep);
+        letter-spacing: -0.02em;
+        margin-bottom: 1.25rem;
+        opacity: 0;
+        animation: fadeUp 0.8s 0.35s forwards;
+      }
+      .page-hero h1 em {
+        font-style: italic;
+        color: var(--danger);
+      }
+      .page-hero p {
+        font-size: 0.95rem;
+        color: var(--text-muted);
+        line-height: 1.8;
+        max-width: 540px;
+        opacity: 0;
+        animation: fadeUp 0.8s 0.5s forwards;
+      }
+      .content-wrapper {
+        max-width: 700px;
+        margin: 0 auto;
+        padding: 0 3rem 6rem;
+      }
+      .content-divider {
+        height: 1px;
+        background: var(--border);
+        margin-bottom: 3rem;
+      }
+      .warning-box {
+        background: var(--danger-light);
+        border: 1px solid var(--danger-border);
+        border-left: 3px solid var(--danger);
+        border-radius: 0 12px 12px 0;
+        padding: 1.25rem 1.5rem;
+        margin-bottom: 2.5rem;
+        opacity: 0;
+        animation: fadeUp 0.8s 0.6s forwards;
+      }
+      .warning-box-title {
+        font-size: 0.78rem;
+        font-weight: 500;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--danger);
+        margin-bottom: 0.5rem;
+      }
+      .warning-box p {
+        font-size: 0.87rem;
+        color: var(--text-muted);
+        line-height: 1.7;
+      }
+      .warning-box ul {
+        list-style: none;
+        margin-top: 0.6rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+      }
+      .warning-box ul li {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.6rem;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        line-height: 1.6;
+      }
+      .warning-box ul li::before {
+        content: "";
+        width: 4px;
+        height: 4px;
+        background: var(--danger);
+        border-radius: 50%;
+        flex-shrink: 0;
+        margin-top: 0.58rem;
+      }
+      .steps-info {
+        margin-bottom: 2.5rem;
+        padding: 2rem;
+        background: rgba(184, 149, 106, 0.06);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+      }
+      .steps-info-title {
+        font-family: "Playfair Display", serif;
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--deep);
+        margin-bottom: 1rem;
+      }
+      .steps-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        list-style: none;
+      }
+      .steps-list li {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        font-size: 0.87rem;
+        color: var(--text-muted);
+        line-height: 1.65;
+      }
+      .step-badge {
+        width: 22px;
+        height: 22px;
+        background: var(--deep);
+        color: var(--cream);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.65rem;
+        font-weight: 700;
+        flex-shrink: 0;
+        margin-top: 0.1rem;
+      }
+      .form-card {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 2.5rem;
+        box-shadow: 0 4px 24px rgba(62, 54, 46, 0.06);
+      }
+      .form-card-title {
+        font-family: "Playfair Display", serif;
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--deep);
+        margin-bottom: 0.4rem;
+      }
+      .form-card-sub {
+        font-size: 0.83rem;
+        color: var(--text-faint);
+        margin-bottom: 2rem;
+        line-height: 1.6;
+      }
+      .form-group {
+        margin-bottom: 1.5rem;
+      }
+      .form-label {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: var(--deep);
+        letter-spacing: 0.04em;
+        margin-bottom: 0.5rem;
+      }
+      .form-label-required {
+        font-size: 0.7rem;
+        color: var(--danger);
+        font-weight: 400;
+        letter-spacing: 0.02em;
+      }
+      .form-input {
+        width: 100%;
+        background: var(--cream);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 0.8rem 1.1rem;
+        font-family: "DM Sans", sans-serif;
+        font-size: 0.9rem;
+        font-weight: 300;
+        color: var(--deep);
+        outline: none;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        appearance: none;
+      }
+      .form-input::placeholder {
+        color: var(--text-faint);
+      }
+      .form-input:focus {
+        border-color: var(--warm-brown);
+        box-shadow: 0 0 0 3px rgba(184, 149, 106, 0.1);
+        background: white;
+      }
+      .form-input.error {
+        border-color: var(--danger);
+        box-shadow: 0 0 0 3px var(--danger-light);
+      }
+      textarea.form-input {
+        resize: vertical;
+        min-height: 130px;
+        line-height: 1.65;
+      }
+      .char-counter {
+        font-size: 0.72rem;
+        color: var(--text-faint);
+        text-align: right;
+        margin-top: 0.4rem;
+        transition: color 0.2s;
+      }
+      .char-counter.met {
+        color: var(--sage);
+      }
+      .char-counter.warn {
+        color: var(--danger);
+      }
+      .field-error {
+        font-size: 0.76rem;
+        color: var(--danger);
+        margin-top: 0.4rem;
+        display: none;
+      }
+      .field-error.show {
+        display: block;
+      }
+      .form-divider {
+        height: 1px;
+        background: var(--border);
+        margin: 2rem 0;
+      }
+      .form-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+      .form-note {
+        font-size: 0.78rem;
+        color: var(--text-faint);
+        line-height: 1.6;
+        flex: 1;
+        min-width: 200px;
+      }
+      .btn-submit {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.6rem;
+        background: var(--danger);
+        color: white;
+        padding: 0.85rem 1.75rem;
+        border-radius: 3rem;
+        font-family: "DM Sans", sans-serif;
+        font-size: 0.88rem;
+        font-weight: 500;
+        border: none;
+        cursor: pointer;
+        transition: all 0.25s;
+        letter-spacing: 0.02em;
+        white-space: nowrap;
+      }
+      .btn-submit:hover:not(:disabled) {
+        background: #a93226;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(192, 57, 43, 0.3);
+      }
+      .btn-submit:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+      }
+      .btn-submit.loading {
+        pointer-events: none;
+        opacity: 0.7;
+      }
+      .spinner {
+        width: 14px;
+        height: 14px;
+        border: 2px solid rgba(255,255,255,0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+        display: none;
+      }
+      .btn-submit.loading .spinner {
+        display: block;
+      }
+      .btn-submit.loading .btn-text {
+        display: none;
+      }
+
+      .already-submitted {
+        display: none;
+        background: rgba(184, 149, 106, 0.07);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 2rem;
+        text-align: center;
+      }
+      .already-submitted.show {
+        display: block;
+      }
+      .already-submitted-icon {
+        width: 48px;
+        height: 48px;
+        background: rgba(184, 149, 106, 0.12);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        font-size: 1.2rem;
+      }
+      .already-submitted h3 {
+        font-family: "Playfair Display", serif;
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--deep);
+        margin-bottom: 0.5rem;
+      }
+      .already-submitted p {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        line-height: 1.7;
+      }
+      .already-submitted .countdown {
+        display: inline-block;
+        font-size: 0.78rem;
+        color: var(--text-faint);
+        margin-top: 1rem;
+        padding: 0.35rem 0.9rem;
+        background: var(--cream-dark);
+        border-radius: 2rem;
+      }
+
+      .success-state {
+        display: none;
+        text-align: center;
+        padding: 3rem 2rem;
+      }
+      .success-state.show {
+        display: block;
+      }
+      .success-icon {
+        width: 64px;
+        height: 64px;
+        background: rgba(123, 158, 123, 0.12);
+        border: 1px solid rgba(123, 158, 123, 0.25);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1.5rem;
+      }
+      .success-icon svg {
+        width: 26px;
+        height: 26px;
+        color: var(--sage);
+      }
+      .success-state h3 {
+        font-family: "Playfair Display", serif;
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: var(--deep);
+        margin-bottom: 0.6rem;
+      }
+      .success-state p {
+        font-size: 0.88rem;
+        color: var(--text-muted);
+        line-height: 1.75;
+        max-width: 380px;
+        margin: 0 auto;
+      }
+      .success-response-time {
+        display: inline-block;
+        margin-top: 1.25rem;
+        font-size: 0.78rem;
+        color: var(--text-faint);
+        background: var(--cream-dark);
+        padding: 0.4rem 1rem;
+        border-radius: 2rem;
+        border: 1px solid var(--border);
+      }
+
+      footer {
+        padding: 3rem;
+        border-top: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1rem;
+      }
+      .footer-logo {
+        font-family: "Playfair Display", serif;
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--deep);
+        text-decoration: none;
+      }
+      .footer-logo span {
+        color: var(--warm-brown);
+      }
+      .footer-links {
+        display: flex;
+        gap: 2rem;
+        list-style: none;
+      }
+      .footer-links a {
+        font-size: 0.8rem;
+        color: var(--text-faint);
+        text-decoration: none;
+        transition: color 0.2s;
+      }
+      .footer-links a:hover {
+        color: var(--deep);
+      }
+      .footer-copy {
+        font-size: 0.78rem;
+        color: var(--text-faint);
+      }
+      @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(24px); }
+        to { opacity: 1; transform: none; }
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+      @media (max-width: 900px) {
+        nav { padding: 1rem 1.5rem; }
+        .nav-links { display: none; }
+        .page-hero { padding: 7rem 1.5rem 3rem; }
+        .content-wrapper { padding: 0 1.5rem 4rem; }
+        .form-card { padding: 1.75rem; }
+        .form-footer { flex-direction: column; align-items: stretch; }
+        .btn-submit { justify-content: center; }
+        footer { flex-direction: column; text-align: center; padding: 2rem 1.5rem; }
+        .footer-links { justify-content: center; flex-wrap: wrap; gap: 1.5rem; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="cursor" id="cursor"></div>
+    <div class="cursor-ring" id="cursorRing"></div>
+
+    <nav>
+      <a href="index.html" class="nav-logo">Hrashwa <span>Dirga</span></a>
+      <ul class="nav-links">
+        <li><a href="index.html#leaderboard">Leaderboard</a></li>
+        <li><a href="index.html#how">How it works</a></li>
+        <li><a href="index.html#download" class="nav-cta">Download</a></li>
+      </ul>
+    </nav>
+
+    <div class="page-hero">
+      <div class="page-label">Account Management</div>
+      <h1>Delete your <em>account</em></h1>
+      <p>If you would like to permanently remove your Hrashwa Dirga account and all associated data, please complete the form below. This action is irreversible.</p>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content-divider"></div>
+
+      <div class="warning-box">
+        <div class="warning-box-title">Before you continue</div>
+        <p>Deleting your account will permanently remove the following data. This cannot be undone.</p>
+        <ul>
+          <li>Your username, avatar, and all profile information</li>
+          <li>Your complete game progress, level history, and score</li>
+          <li>Your coin balance and any earned rewards</li>
+          <li>Your position on the global and country leaderboards</li>
+          <li>Your daily streak record and all associated bonuses</li>
+        </ul>
+      </div>
+
+      <div class="steps-info">
+        <div class="steps-info-title">How to request account deletion</div>
+        <ul class="steps-list">
+          <li>
+            <div class="step-badge">1</div>
+            <span>Fill in your registered email address — the one linked to your Google account used to sign in to Hrashwa Dirga.</span>
+          </li>
+          <li>
+            <div class="step-badge">2</div>
+            <span>Enter the username associated with your account (up to 10 characters, as shown on the leaderboard).</span>
+          </li>
+          <li>
+            <div class="step-badge">3</div>
+            <span>Provide a reason for your deletion request in at least 100 characters to help us improve the experience for other players.</span>
+          </li>
+          <li>
+            <div class="step-badge">4</div>
+            <span>Submit the form. Our team will verify your identity and process the request. We will respond within 48 hours.</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="form-card" id="formCard">
+        <div id="alreadySubmitted" class="already-submitted">
+          <div class="already-submitted-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--warm-brown)">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+          </div>
+          <h3>Request already submitted</h3>
+          <p>You have already submitted an account deletion request. Our team will process it and respond to your registered email within 48 hours. Please do not submit duplicate requests.</p>
+          <div class="countdown" id="cooldownText"></div>
+        </div>
+
+        <div id="formContent">
+          <div class="form-card-title">Account Deletion Request</div>
+          <div class="form-card-sub">All fields are required. Your request will be reviewed and actioned within 48 hours of submission.</div>
+
+          <div class="form-group">
+            <div class="form-label">
+              <span>Registered Email Address</span>
+              <span class="form-label-required">Required</span>
+            </div>
+            <input
+              type="email"
+              id="emailInput"
+              class="form-input"
+              placeholder="the email you used to sign in with Google"
+              autocomplete="email"
+            />
+            <div class="field-error" id="emailError">Please enter a valid email address.</div>
+          </div>
+
+          <div class="form-group">
+            <div class="form-label">
+              <span>In-App Username</span>
+              <span class="form-label-required">Required</span>
+            </div>
+            <input
+              type="text"
+              id="usernameInput"
+              class="form-input"
+              placeholder="your username as shown on the leaderboard"
+              maxlength="10"
+              autocomplete="off"
+            />
+            <div class="field-error" id="usernameError">Please enter your username.</div>
+          </div>
+
+          <div class="form-group">
+            <div class="form-label">
+              <span>Reason for Deletion</span>
+              <span class="form-label-required">Required — min. 100 characters</span>
+            </div>
+            <textarea
+              id="reasonInput"
+              class="form-input"
+              placeholder="Please describe in detail why you are requesting account deletion. Your feedback helps us improve the experience for other players."
+            ></textarea>
+            <div class="char-counter" id="charCounter">0 / 100 minimum</div>
+            <div class="field-error" id="reasonError">Reason must be at least 100 characters.</div>
+          </div>
+
+          <div class="form-divider"></div>
+
+          <div class="form-footer">
+            <p class="form-note">We do not share your information with third parties. Your email will only be used to verify your identity and confirm deletion. We typically respond within 48 hours.</p>
+            <button class="btn-submit" id="submitBtn" type="button">
+              <div class="spinner"></div>
+              <span class="btn-text">Submit Request</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="success-state" id="successState">
+          <div class="success-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </div>
+          <h3>Request submitted</h3>
+          <p>Your account deletion request has been received. We will verify your information and send a confirmation to your registered email address.</p>
+          <div class="success-response-time">We typically respond within 48 hours</div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <a href="index.html" class="footer-logo">Hrashwa <span>Dirga</span></a>
+      <ul class="footer-links">
+        <li><a href="privacy.html">Privacy Policy</a></li>
+        <li><a href="#">Terms</a></li>
+        <li><a href="delete-account.html">Delete Account</a></li>
+        <li><a href="mailto:support@vidhgrow.online">Support</a></li>
+      </ul>
+      <div class="footer-copy">2024 Hrashwa Dirga. All rights reserved.</div>
+    </footer>
+
+    <script>
+      const cursor = document.getElementById("cursor");
+      const ring = document.getElementById("cursorRing");
+      let mx = 0, my = 0, rx = 0, ry = 0;
+      document.addEventListener("mousemove", (e) => {
+        mx = e.clientX;
+        my = e.clientY;
+        cursor.style.left = mx + "px";
+        cursor.style.top = my + "px";
+      });
+      function animRing() {
+        rx += (mx - rx) * 0.12;
+        ry += (my - ry) * 0.12;
+        ring.style.left = rx + "px";
+        ring.style.top = ry + "px";
+        requestAnimationFrame(animRing);
+      }
+      animRing();
+      document.querySelectorAll("a,button,[data-hover]").forEach((el) => {
+        el.addEventListener("mouseenter", () => {
+          ring.style.width = "52px";
+          ring.style.height = "52px";
+          cursor.style.transform = "translate(-50%,-50%) scale(1.8)";
+        });
+        el.addEventListener("mouseleave", () => {
+          ring.style.width = "36px";
+          ring.style.height = "36px";
+          cursor.style.transform = "translate(-50%,-50%) scale(1)";
+        });
+      });
+
+      const STORAGE_KEY = "hd_delete_request";
+      const COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000;
+
+      function checkAlreadySubmitted() {
+        try {
+          const stored = localStorage.getItem(STORAGE_KEY);
+          if (!stored) return false;
+          const data = JSON.parse(stored);
+          const elapsed = Date.now() - data.timestamp;
+          if (elapsed < COOLDOWN_MS) {
+            return { remaining: COOLDOWN_MS - elapsed, timestamp: data.timestamp };
+          }
+          localStorage.removeItem(STORAGE_KEY);
+          return false;
+        } catch (e) {
+          return false;
+        }
+      }
+
+      function formatTimeRemaining(ms) {
+        const hours = Math.floor(ms / (1000 * 60 * 60));
+        const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+        if (hours > 24) {
+          const days = Math.floor(hours / 24);
+          return days + " day" + (days !== 1 ? "s" : "") + " remaining before you can submit again";
+        }
+        return hours + "h " + minutes + "m remaining before you can submit again";
+      }
+
+      function markAsSubmitted() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({ timestamp: Date.now() }));
+        } catch (e) {}
+      }
+
+      const existing = checkAlreadySubmitted();
+      if (existing) {
+        document.getElementById("formContent").style.display = "none";
+        const alreadyEl = document.getElementById("alreadySubmitted");
+        alreadyEl.classList.add("show");
+        document.getElementById("cooldownText").textContent = formatTimeRemaining(existing.remaining);
+      }
+
+      const emailInput = document.getElementById("emailInput");
+      const usernameInput = document.getElementById("usernameInput");
+      const reasonInput = document.getElementById("reasonInput");
+      const charCounter = document.getElementById("charCounter");
+      const submitBtn = document.getElementById("submitBtn");
+
+      reasonInput.addEventListener("input", () => {
+        const len = reasonInput.value.length;
+        charCounter.textContent = len + " / 100 minimum";
+        charCounter.className = "char-counter" + (len >= 100 ? " met" : len > 80 ? "" : "");
+      });
+
+      function validateEmail(val) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim());
+      }
+
+      function showError(inputEl, errorEl) {
+        inputEl.classList.add("error");
+        errorEl.classList.add("show");
+      }
+
+      function clearError(inputEl, errorEl) {
+        inputEl.classList.remove("error");
+        errorEl.classList.remove("show");
+      }
+
+      [emailInput, usernameInput, reasonInput].forEach((el) => {
+        el.addEventListener("input", () => {
+          el.classList.remove("error");
+          const errId = el.id.replace("Input", "Error");
+          const errEl = document.getElementById(errId);
+          if (errEl) errEl.classList.remove("show");
+        });
+      });
+
+      submitBtn.addEventListener("click", async () => {
+        let valid = true;
+
+        if (!validateEmail(emailInput.value)) {
+          showError(emailInput, document.getElementById("emailError"));
+          valid = false;
+        } else {
+          clearError(emailInput, document.getElementById("emailError"));
+        }
+
+        if (usernameInput.value.trim().length < 1) {
+          showError(usernameInput, document.getElementById("usernameError"));
+          valid = false;
+        } else {
+          clearError(usernameInput, document.getElementById("usernameError"));
+        }
+
+        if (reasonInput.value.trim().length < 100) {
+          showError(reasonInput, document.getElementById("reasonError"));
+          valid = false;
+        } else {
+          clearError(reasonInput, document.getElementById("reasonError"));
+        }
+
+        if (!valid) return;
+
+        submitBtn.classList.add("loading");
+        submitBtn.disabled = true;
+
+        try {
+          const response = await fetch("https://formspree.io/f/maqavegj", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Accept": "application/json" },
+            body: JSON.stringify({
+              email: emailInput.value.trim(),
+              username: usernameInput.value.trim(),
+              reason: reasonInput.value.trim(),
+              _subject: "Account Deletion Request — Hrashwa Dirga"
+            })
+          });
+
+          if (response.ok) {
+            markAsSubmitted();
+            document.getElementById("formContent").style.display = "none";
+            document.getElementById("successState").classList.add("show");
+          } else {
+            throw new Error("Server error");
+          }
+        } catch (err) {
+          submitBtn.classList.remove("loading");
+          submitBtn.disabled = false;
+          alert("Something went wrong. Please try again or email us directly at support@vidhgrow.online");
+        }
+      });
+    </script>
+  </body>
+</html>
