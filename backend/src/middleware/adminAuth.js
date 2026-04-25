@@ -108,8 +108,8 @@ const setAdminCookie = (res, token) => {
   // Cookie options with enhanced security for admin
   const cookieOptions = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+    secure: true,
+    sameSite: "none",
     maxAge: 7 * 24 * 60 * 60 * 1000,
     path: "/",
   };
@@ -126,8 +126,8 @@ const setAdminCookie = (res, token) => {
 const clearAdminCookie = (res) => {
   res.clearCookie("adminToken", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+    secure: true,
+    sameSite: "none",
     path: "/",
   });
 };
