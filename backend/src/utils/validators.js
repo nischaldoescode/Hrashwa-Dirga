@@ -55,6 +55,10 @@ const validateCreateQuestion = [
       // Correct answer must be one of the provided options
       return req.body.options && req.body.options.includes(value);
     }).withMessage('Correct answer must be one of the provided options'),
+
+  body('orderInLevel')
+    .optional()
+    .isInt({ min: 0 }).withMessage('Question order must be a non-negative integer'),
   
   body('explanation')
     .optional()
@@ -97,6 +101,10 @@ const validateUpdateQuestion = [
       }
       return true; // Will be validated against existing options in controller
     }).withMessage('Correct answer must be one of the options'),
+
+  body('orderInLevel')
+    .optional()
+    .isInt({ min: 0 }).withMessage('Question order must be a non-negative integer'),
   
   body('explanation')
     .optional()

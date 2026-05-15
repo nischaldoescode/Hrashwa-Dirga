@@ -73,6 +73,7 @@ const closeRedis = async () => {
  * Enables efficient pattern-based invalidation
  */
 const CACHE_PREFIXES = {
+  REQUEST: "request:",
   USER: "user:",
   LEVEL: "level:",
   LEVELS_ALL: "levels:all",
@@ -221,16 +222,19 @@ const deleteCachePattern = async (pattern) => {
 
     // Use SCAN to find matching keys
     const keys = [];
-    let cursor = 0;
+    let cursor = "0";
 
     do {
-      const result = await redisClient.scan(cursor, {
-        MATCH: pattern,
-        COUNT: 100,
-      });
-      cursor = result.cursor;
-      keys.push(...result.keys);
-    } while (cursor !== 0);
+      const result = await redisClient.scan(
+        cursor,
+        "MATCH",
+        pattern,
+        "COUNT",
+        100
+      );
+      cursor = Array.isArray(result) ? result[0] : result.cursor;
+      keys.push(...(Array.isArray(result) ? result[1] : result.keys));
+    } while (cursor !== "0");
 
     if (keys.length === 0) {
       console.log(`No keys found for pattern: ${pattern}`);
@@ -238,13 +242,28 @@ const deleteCachePattern = async (pattern) => {
     }
 
     // Delete all matching keys
-    await redisClient.del(keys);
+    await redisClient.del(...keys);
     console.log(`Deleted ${keys.length} keys matching pattern: ${pattern}`);
     return true;
   } catch (error) {
     console.error(`Redis delete pattern error for ${pattern}:`, error);
     return false;
   }
+};
+
+/**
+ * Invalidate request-level cache entries created by cacheMiddleware.
+ * @param {string} pathPattern API path prefix, e.g. '/api/levels'
+ * @returns {Promise<boolean>} Success status
+ */
+const invalidateRequestCache = async (pathPattern) => {
+  const normalizedPath = pathPattern.startsWith("/")
+    ? pathPattern
+    : `/${pathPattern}`;
+
+  return await deleteCachePattern(
+    `${CACHE_PREFIXES.REQUEST}${normalizedPath}*`
+  );
 };
 
 /**
@@ -300,8 +319,11 @@ const getCachedLevels = async () => {
  * @returns {Promise<boolean>}
  */
 const invalidateLevelsCache = async () => {
-  await deleteCache(CACHE_PREFIXES.LEVELS_ALL);
-  await deleteCachePattern(`${CACHE_PREFIXES.LEVEL}*`);
+  await Promise.all([
+    deleteCache(CACHE_PREFIXES.LEVELS_ALL),
+    deleteCachePattern(`${CACHE_PREFIXES.LEVEL}*`),
+    invalidateRequestCache("/api/levels"),
+  ]);
   return true;
 };
 
@@ -333,7 +355,12 @@ const getCachedQuestions = async (levelId) => {
  */
 const invalidateQuestionsCache = async (levelId) => {
   const key = `${CACHE_PREFIXES.QUESTIONS_LEVEL}${levelId}`;
-  return await deleteCache(key);
+  await Promise.all([
+    deleteCache(key),
+    invalidateRequestCache("/api/questions"),
+    invalidateRequestCache(`/api/levels/${levelId}/questions`),
+  ]);
+  return true;
 };
 
 /**
@@ -400,6 +427,7 @@ module.exports = {
   getCache,
   deleteCache,
   deleteCachePattern,
+  invalidateRequestCache,
   cacheUser,
   getCachedUser,
   invalidateUserCache,

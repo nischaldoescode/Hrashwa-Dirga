@@ -11,6 +11,7 @@ const {
   invalidateQuestionsCache,
   invalidateLeaderboardCache,
   invalidateUserCache,
+  deleteCachePattern,
 } = require("../config/redis");
 
 /**
@@ -18,23 +19,33 @@ const {
  * Ensures admin panel and app see updated data immediately
  */
 const invalidateAllQuestionCaches = async (levelId) => {
-  const {
-    invalidateLevelsCache,
-    invalidateQuestionsCache,
-    deleteCachePattern,
-  } = require("../config/redis");
-
   try {
     await Promise.all([
       invalidateLevelsCache(),
       invalidateQuestionsCache(levelId),
-      deleteCachePattern("questions:all:*"), // Use pattern deletion
+      deleteCachePattern("questions:all:*"),
     ]);
 
     console.log(`All question caches invalidated for level ${levelId}`);
   } catch (error) {
     console.error("Cache invalidation failed:", error);
   }
+};
+
+const normalizeQuestionOrderForLevel = async (levelId) => {
+  const questions = await Question.find({ levelId, isActive: true })
+    .sort({ orderInLevel: 1, createdAt: 1 })
+    .select("_id")
+    .lean();
+
+  await Promise.all(
+    questions.map((question, index) =>
+      Question.updateOne(
+        { _id: question._id },
+        { $set: { orderInLevel: index } }
+      )
+    )
+  );
 };
 
 const createQuestion = async (req, res) => {
@@ -50,26 +61,38 @@ const createQuestion = async (req, res) => {
       });
     }
 
-    // Count existing active questions for this level
     const existingQuestionsCount = await Question.countDocuments({
       levelId,
       isActive: true,
     });
+    const lastQuestion = await Question.findOne({ levelId, isActive: true })
+      .sort({ orderInLevel: -1 })
+      .select("orderInLevel")
+      .lean();
+    const nextAvailableOrder = lastQuestion ? lastQuestion.orderInLevel + 1 : 0;
 
-    // Validate orderInLevel is sequential
-    let validatedOrder = orderInLevel;
+    let validatedOrder = nextAvailableOrder;
+    const requestedOrder =
+      orderInLevel === undefined || orderInLevel === null || orderInLevel === ""
+        ? undefined
+        : Number(orderInLevel);
 
-    if (orderInLevel !== undefined) {
-      // If orderInLevel is provided, validate it's the next sequential number
-      if (orderInLevel !== existingQuestionsCount) {
+    if (requestedOrder !== undefined) {
+      if (!Number.isInteger(requestedOrder) || requestedOrder < 0) {
         return res.status(400).json({
           success: false,
-          message: `Invalid order. Next question must have order ${existingQuestionsCount}. Current question count: ${existingQuestionsCount}`,
+          message: "Question order must be a non-negative integer",
         });
       }
-    } else {
-      // If not provided, auto-assign next sequential number
-      validatedOrder = existingQuestionsCount;
+
+      if (requestedOrder !== nextAvailableOrder) {
+        return res.status(400).json({
+          success: false,
+          message: `Invalid order. Next question must have order ${nextAvailableOrder}. Current question count: ${existingQuestionsCount}`,
+        });
+      }
+
+      validatedOrder = requestedOrder;
     }
 
     // Check for duplicate orderInLevel in this level
@@ -82,7 +105,7 @@ const createQuestion = async (req, res) => {
     if (duplicateOrder) {
       return res.status(400).json({
         success: false,
-        message: `Question with order ${validatedOrder} already exists in this level. Next available order: ${existingQuestionsCount}`,
+        message: `Question with order ${validatedOrder} already exists in this level. Next available order: ${nextAvailableOrder}`,
       });
     }
 
@@ -97,17 +120,9 @@ const createQuestion = async (req, res) => {
 
     await level.addQuestion(question._id);
 
-    // Verify the question was added
     const updatedLevel = await Level.findById(levelId);
     console.log(`Level now has ${updatedLevel.questions.length} questions`);
-    // Invalidate ALL relevant caches to ensure fresh data
-    await Promise.all([
-      invalidateLevelsCache(),
-      invalidateQuestionsCache(levelId),
-      // Also invalidate the "all questions" cache key
-      require("../config/redis").deleteCache("questions:all:1:50"), // Default pagination
-      require("../config/redis").deleteCache("questions:all:*"), // All pagination variants
-    ]);
+    await invalidateAllQuestionCaches(levelId);
 
     console.log(`Question created with order ${validatedOrder}:`, question._id);
 
@@ -116,7 +131,7 @@ const createQuestion = async (req, res) => {
       message: "Question created successfully",
       data: {
         question: question,
-        nextAvailableOrder: existingQuestionsCount + 1,
+        nextAvailableOrder: validatedOrder + 1,
       },
     });
   } catch (error) {
@@ -167,16 +182,16 @@ const updateQuestion = async (req, res) => {
 
     await question.save();
 
-    // Invalidate caches
-    await invalidateLevelsCache();
-    await invalidateQuestionsCache(question.levelId.toString());
+    await invalidateAllQuestionCaches(question.levelId.toString());
 
     console.log("Question updated:", id);
 
     return res.status(200).json({
       success: true,
       message: "Question updated successfully",
-      question: question,
+      data: {
+        question: question,
+      },
     });
   } catch (error) {
     console.error("Update question error:", error);
@@ -210,22 +225,9 @@ const deleteQuestion = async (req, res) => {
     await Question.findByIdAndDelete(id);
 
     // Invalidate ALL question-related caches
-    const {
-      invalidateLevelsCache,
-      invalidateQuestionsCache,
-      deleteCachePattern,
-    } = require("../config/redis");
+    await normalizeQuestionOrderForLevel(levelId);
 
-    await Promise.all([
-      // Invalidate level caches (question count changed)
-      invalidateLevelsCache(),
-
-      // Invalidate questions for this specific level
-      invalidateQuestionsCache(levelId),
-
-      // CRITICAL: Invalidate ALL "questions:all" caches using pattern matching
-      deleteCachePattern("questions:all:*"),
-    ]);
+    await invalidateAllQuestionCaches(levelId);
 
     console.log("Question deleted and caches invalidated:", id);
 
@@ -260,7 +262,9 @@ const getQuestionById = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      question: question,
+      data: {
+        question: question,
+      },
     });
   } catch (error) {
     console.error("Get question error:", error);
