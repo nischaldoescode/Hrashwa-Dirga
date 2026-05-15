@@ -4,7 +4,7 @@
  */
 
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
@@ -64,7 +64,7 @@ export const LevelDialog = ({
       : 1;
 
   const form = useForm<LevelFormValues>({
-    resolver: zodResolver(levelSchema) as any,
+    resolver: zodResolver(levelSchema) as Resolver<LevelFormValues>,
     defaultValues: level
       ? {
           levelNumber: level.levelNumber,
@@ -123,7 +123,7 @@ export const LevelDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>
             {isEditing ? "Edit Level" : "Create New Level"}
@@ -194,16 +194,18 @@ export const LevelDialog = ({
               )}
             />
 
-            <DialogFooter>
+            <DialogFooter className="gap-2 sm:gap-0">
               <Button
                 type="button"
                 variant="outline"
+                className="w-full sm:w-auto"
                 onClick={() => onOpenChange(false)}
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
+                className="w-full sm:w-auto"
                 disabled={createMutation.isPending || updateMutation.isPending}
               >
                 {isEditing ? "Update" : "Create"} Level

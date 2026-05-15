@@ -44,7 +44,7 @@ export const LevelTable = ({ levels }: LevelTableProps) => {
   return (
     <>
       <div className="rounded-md border">
-        <Table>
+        <Table className="min-w-[760px]">
           <TableHeader>
             <TableRow>
               <TableHead className="w-20">Level</TableHead>
@@ -85,6 +85,7 @@ export const LevelTable = ({ levels }: LevelTableProps) => {
                       <Button
                         variant="ghost"
                         size="sm"
+                        aria-label={`Edit level ${level.levelNumber}`}
                         onClick={() => setEditingLevel(level)}
                       >
                         <Edit className="h-4 w-4" />
@@ -92,6 +93,7 @@ export const LevelTable = ({ levels }: LevelTableProps) => {
                       <Button
                         variant="ghost"
                         size="sm"
+                        aria-label={`Delete level ${level.levelNumber}`}
                         onClick={() => setDeletingLevelId(level._id)}
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />

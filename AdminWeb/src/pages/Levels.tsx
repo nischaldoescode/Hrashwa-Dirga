@@ -24,14 +24,17 @@ export const Levels = () => {
   return (
     <div className="space-y-6">
       {/* Page header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Levels</h1>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Levels</h1>
           <p className="text-muted-foreground">
             Manage game levels and their configuration
           </p>
         </div>
-        <Button onClick={() => setIsCreateDialogOpen(true)}>
+        <Button
+          className="w-full sm:w-auto"
+          onClick={() => setIsCreateDialogOpen(true)}
+        >
           <Plus className="mr-2 h-4 w-4" />
           Create Level
         </Button>

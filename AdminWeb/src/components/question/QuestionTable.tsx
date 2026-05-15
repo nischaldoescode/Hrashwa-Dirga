@@ -45,7 +45,7 @@ export const QuestionTable = ({ questions }: QuestionTableProps) => {
   return (
     <>
       <div className="rounded-md border">
-        <Table>
+        <Table className="min-w-[760px]">
           <TableHeader>
             <TableRow>
               <TableHead>Question</TableHead>
@@ -93,6 +93,7 @@ export const QuestionTable = ({ questions }: QuestionTableProps) => {
                       <Button
                         variant="ghost"
                         size="sm"
+                        aria-label={`Edit question ${question.questionText}`}
                         onClick={() => setEditingQuestion(question)}
                       >
                         <Edit className="h-4 w-4" />
@@ -100,6 +101,7 @@ export const QuestionTable = ({ questions }: QuestionTableProps) => {
                       <Button
                         variant="ghost"
                         size="sm"
+                        aria-label={`Delete question ${question.questionText}`}
                         onClick={() => setDeletingQuestionId(question._id)}
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
