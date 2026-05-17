@@ -2,7 +2,6 @@
  * Questions Page
  * Manage questions with CRUD operations
  */
-
 import { useEffect, useState } from 'react'
 import { ChevronLeft, ChevronRight, HelpCircle, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
