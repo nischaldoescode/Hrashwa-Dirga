@@ -3,7 +3,12 @@
  * Manages question data and operations
  */
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import {
   getAllQuestions,
   getQuestionsByLevel,
@@ -15,7 +20,12 @@ import {
 import { QUERY_KEYS } from "@/lib/constants";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/api/axios";
-import type { QuestionFormValues } from "@/types";
+import type { PaginationMeta, Question, QuestionFormValues } from "@/types";
+
+interface QuestionsCachePage {
+  questions: Question[];
+  pagination?: PaginationMeta;
+}
 
 /**
  * Fetch all questions with pagination
@@ -33,15 +43,7 @@ export const useQuestions = (page: number = 1, limit: number = 50) => {
     queryKey: [...QUERY_KEYS.QUESTIONS.ALL, page, limit],
     queryFn: () => getAllQuestions(page, limit),
     staleTime: 2 * 60 * 1000, // Cache for 2 minutes
-    placeholderData: {
-      questions: [],
-      pagination: {
-        currentPage: page,
-        totalPages: 0,
-        totalCount: 0,
-        limit: limit,
-      },
-    },
+    placeholderData: keepPreviousData,
   });
 };
 
@@ -127,17 +129,25 @@ export const useDeleteQuestion = () => {
     mutationFn: (id: string) => deleteQuestion(id),
     onSuccess: async (_, deletedQuestionId) => {
       // Step 1: Remove the deleted question from ALL cached pages immediately (optimistic update)
-      queryClient.setQueriesData(
+      queryClient.setQueriesData<QuestionsCachePage>(
         { queryKey: QUERY_KEYS.QUESTIONS.ALL },
-        (oldData: any) => {
+        (oldData) => {
           if (!oldData?.questions) return oldData;
+          const nextTotalCount = Math.max(
+            0,
+            (oldData.pagination?.totalCount ?? oldData.questions.length) - 1
+          );
+
           return {
             ...oldData,
-            questions: oldData.questions.filter((q: any) => q._id !== deletedQuestionId),
-            pagination: {
-              ...oldData.pagination,
-              totalCount: oldData.pagination.totalCount - 1,
-            },
+            questions: oldData.questions.filter((q) => q._id !== deletedQuestionId),
+            pagination: oldData.pagination
+              ? {
+                  ...oldData.pagination,
+                  totalCount: nextTotalCount,
+                  totalPages: Math.ceil(nextTotalCount / oldData.pagination.limit),
+                }
+              : oldData.pagination,
           };
         }
       );

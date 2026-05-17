@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:drawable="@drawable/dot_pulse">
-
-    <target
-        android:name="dot"
-        android:animation="@animator/dot_scale_alpha" />
-
-</animated-vector>
